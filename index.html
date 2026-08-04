@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Booking">
+  <title>Booking App</title>
+  <style>
+    :root {
+      --apple-blue: #007AFF;
+      --bg-color: #F2F2F7;
+      --card-bg: #FFFFFF;
+      --text-main: #1C1C1E;
+      --text-muted: #8E8E93;
+      --border-color: #E5E5EA;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      margin: 0; padding: 0;
+      -webkit-font-smoothing: antialiased;
+      display: flex; flex-direction: column;
+      height: 100vh; overflow: hidden;
+    }
+
+    .view-container {
+      flex: 1; overflow-y: auto; padding-bottom: 24px;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+      touch-action: pan-y;
+    }
+    .view { display: none; min-height: 100%; }
+    .view.active { display: block; }
+
+    .booking-content { padding: 24px 16px 0 16px; }
+    .title { font-size: 28px; font-weight: 700; margin-bottom: 0; letter-spacing: -0.5px; }
+
+    .segmented-control {
+      display: flex; background-color: #E3E3E8;
+      border-radius: 8px; padding: 2px; margin-bottom: 24px;
+    }
+    .seg-btn {
+      flex: 1; text-align: center; padding: 8px 0;
+      font-size: 14px; font-weight: 500;
+      color: var(--text-main); background: transparent;
+      border: none; border-radius: 6px; cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .seg-btn.active {
+      background-color: white;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.12), 0 3px 1px rgba(0,0,0,0.04);
+    }
+
+    .fecha-wrapper { position: relative; flex: 1; display: flex; }
+    #fechaPicker { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+    #btnFechaLabel { width: 100%; pointer-events: none; }
+
+    .btn-primary {
+      width: 100%; background-color: var(--apple-blue);
+      color: white; font-size: 17px; font-weight: 600;
+      padding: 14px; border: none; border-radius: 12px;
+      cursor: pointer; box-shadow: 0 4px 10px rgba(0, 122, 255, 0.3);
+      transition: transform 0.1s ease;
+    }
+    .btn-primary:active { transform: scale(0.97); }
+
+    .btn-secondary {
+      width: 100%; background-color: #1C1C1E;
+      color: white; font-size: 17px; font-weight: 600;
+      padding: 14px; border: none; border-radius: 12px;
+      cursor: pointer; transition: transform 0.1s ease;
+    }
+    .btn-secondary:active { transform: scale(0.97); }
+
+    .client-input-wrapper { display: flex; margin-top: 24px; gap: 12px; }
+    .client-input {
+      flex: 1; background: #E3E3E8; border: none; border-radius: 12px;
+      padding: 14px 16px; font-size: 17px; color: var(--text-main); outline: none;
+    }
+    .client-input::placeholder { color: var(--text-muted); }
+
+    .config-num-btn {
+      width: 50px; height: 50px; border-radius: 50%; border: none;
+      background: #E3E3E8; color: var(--text-main); font-size: 18px; font-weight: 600;
+      cursor: pointer; transition: all 0.15s ease;
+    }
+    .config-num-btn.selected {
+      background: var(--apple-blue); color: white;
+      box-shadow: 0 4px 10px rgba(0, 122, 255, 0.3);
+    }
+
+    .btn-ig {
+      background: #1C1C1E; color: white; border: none; border-radius: 12px;
+      width: 50px; display: flex; justify-content: center; align-items: center;
+      cursor: pointer; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+    }
+    .btn-ig:active { transform: scale(0.95); }
+
+    .btn-square {
+      background: #1C1C1E; color: white; border: none; border-radius: 10px;
+      width: 42px; height: 42px; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; flex-shrink: 0; font-size: 13px; font-weight: 700;
+    }
+    .btn-square:active { transform: scale(0.92); }
+
+    .horario-btn {
+      background: #E3E3E8; color: var(--text-main); border: none; border-radius: 20px;
+      padding: 10px 16px; font-size: 14px; font-weight: 500; cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .horario-btn.selected {
+      background: var(--apple-blue); color: white;
+      box-shadow: 0 4px 10px rgba(0, 122, 255, 0.3);
+    }
+
+    .duracion-select {
+      width: 100%; background: #E3E3E8; border: none; border-radius: 12px;
+      padding: 14px 16px; font-size: 17px; color: var(--text-main); outline: none;
+    }
+
+    .field-label {
+      font-size: 13px; color: var(--text-muted); font-weight: 500; margin-bottom: 6px; display: block;
+    }
+
+    .evento-item {
+      display: flex; align-items: center; gap: 10px; padding: 14px 0;
+      border-bottom: 0.5px solid var(--border-color);
+    }
+    .evento-nombre {
+      font-size: 16px; font-weight: 500; color: var(--text-main);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .evento-hora { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.3); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+      z-index: 999; opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+      display: flex; align-items: flex-end;
+    }
+    .modal-overlay.active { opacity: 1; pointer-events: auto; }
+    .modal-sheet {
+      background: white; width: 100%; max-height: 70vh; border-radius: 20px 20px 0 0;
+      transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+      display: flex; flex-direction: column; padding-bottom: 30px;
+    }
+    .modal-overlay.active .modal-sheet { transform: translateY(0); }
+    .modal-header {
+      padding: 16px; text-align: center; font-weight: 600;
+      border-bottom: 0.5px solid var(--border-color); position: relative; font-size: 17px;
+    }
+    .modal-header .close-btn {
+      position: absolute; right: 16px; top: 16px; color: var(--apple-blue);
+      background: none; border: none; font-size: 17px; cursor: pointer; font-weight: 500;
+    }
+    .ig-list { overflow-y: auto; padding: 0 16px; }
+    .ig-item {
+      padding: 16px 0; border-bottom: 0.5px solid var(--border-color);
+      color: var(--text-main); cursor: pointer; font-size: 17px;
+    }
+    .ig-item:last-child { border-bottom: none; }
+
+    .tab-bar {
+      position: fixed; bottom: 0; width: 100%; background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border-top: 0.5px solid rgba(0,0,0,0.1); display: flex; justify-content: space-around;
+      padding: 12px 0 24px 0; z-index: 100;
+    }
+    .tab-item {
+      display: flex; flex-direction: column; align-items: center;
+      color: var(--text-muted); cursor: pointer; font-size: 16px; font-weight: 600; width: 50%;
+    }
+    .tab-item.active { color: var(--apple-blue); }
+
+    #toast {
+      position: fixed; top: -50px; left: 50%; transform: translateX(-50%);
+      background: rgba(0,0,0,0.8); color: white; padding: 12px 24px;
+      border-radius: 20px; font-size: 15px; font-weight: 500;
+      transition: top 0.3s ease; z-index: 1000;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="toast">Copiado al portapapeles</div>
+
+  <div class="view-container">
+    <div id="view-agenda" class="view">
+      <div class="booking-content">
+        <div class="title" style="margin-bottom:20px;">Citas de hoy</div>
+        <div id="eventosListContainer">
+          <div style="color:var(--text-muted); font-size:14px; text-align:center; padding:20px 0;">Cargando citas...</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="view-booking" class="view active">
+      <div class="booking-content">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+          <div class="title">Booking</div>
+          <button onclick="abrirModalConfig()" id="btnConfig" style="background:#E3E3E8; border:none; width:40px; height:40px; border-radius:12px; font-size:15px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--text-main);">01</button>
+        </div>
+
+        <div class="segmented-control">
+          <button class="seg-btn active" id="btnHoy" onclick="selectDateType('hoy', this)">Hoy</button>
+          <button class="seg-btn" id="btnManana" onclick="selectDateType('mañana', this)">Mañana</button>
+          <div class="fecha-wrapper">
+            <button class="seg-btn" id="btnFechaLabel">Fecha</button>
+            <input type="date" id="fechaPicker" onchange="handleDatePick(this)">
+          </div>
+        </div>
+
+        <button class="btn-primary" id="btnCopiar" onclick="copiarHorarios()">
+          Copiar horarios
+        </button>
+
+        <div style="margin-top:20px;">
+          <div id="igSeleccionadoLabel" style="display:none; font-size:12px; color:var(--text-muted); margin-bottom:6px; padding-left:4px;"></div>
+          <div class="client-input-wrapper" style="margin-top:0;">
+            <input type="text" id="nombreClienta" class="client-input" placeholder="Nombre de la clienta">
+            <button class="btn-ig" onclick="abrirModalIG()">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="8" y1="6" x2="21" y2="6"></line>
+                <line x1="8" y1="12" x2="21" y2="12"></line>
+                <line x1="8" y1="18" x2="21" y2="18"></line>
+                <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                <line x1="3" y1="18" x2="3.01" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div style="margin-top:20px;">
+          <label class="field-label">Tiempo de atención</label>
+          <select id="duracionSelect" class="duracion-select" onchange="actualizarHorarios()">
+            <option value="30">30 min</option>
+            <option value="60">1 hora</option>
+            <option value="90" selected>1.5 horas</option>
+            <option value="180">3 horas</option>
+            <option value="240">4 horas</option>
+          </select>
+        </div>
+
+        <div id="horariosBotonesContainer" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:16px;"></div>
+
+        <div style="margin-top:20px;">
+          <label class="field-label">Manicurista</label>
+          <select id="manicuristaSelect" class="duracion-select">
+            <option value="">Cargando...</option>
+          </select>
+        </div>
+
+        <div class="client-input-wrapper" style="margin-top:20px;">
+          <input type="text" id="servicioInput" class="client-input" placeholder="Servicio" onblur="guardarServicioSiEsNuevo()">
+          <button class="btn-ig" onclick="abrirModalServicio()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="8" y1="6" x2="21" y2="6"></line>
+              <line x1="8" y1="12" x2="21" y2="12"></line>
+              <line x1="8" y1="18" x2="21" y2="18"></line>
+              <line x1="3" y1="6" x2="3.01" y2="6"></line>
+              <line x1="3" y1="12" x2="3.01" y2="12"></line>
+              <line x1="3" y1="18" x2="3.01" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+
+        <button class="btn-secondary" id="btnAgendar" onclick="agendarCita()" style="margin-top:20px;">
+          Agendar cita
+        </button>
+
+      </div>
+    </div>
+  </div>
+
+  <div id="modalIG" class="modal-overlay">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        Seleccionar IG
+        <button class="close-btn" onclick="cerrarModalIG()">Cerrar</button>
+      </div>
+      <div class="ig-list" id="igListContainer">
+        <div class="ig-item" style="text-align:center; color: #8E8E93;">Cargando lista...</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalConfig" class="modal-overlay">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        Manicuristas disponibles
+        <button class="close-btn" onclick="cerrarModalConfig()">Cerrar</button>
+      </div>
+      <div style="display:flex; gap:10px; padding:20px 16px 30px 16px; flex-wrap:wrap; justify-content:center;">
+        <button class="config-num-btn" data-num="1" onclick="elegirNumTrabajadores(1)">1</button>
+        <button class="config-num-btn" data-num="2" onclick="elegirNumTrabajadores(2)">2</button>
+        <button class="config-num-btn" data-num="3" onclick="elegirNumTrabajadores(3)">3</button>
+        <button class="config-num-btn" data-num="4" onclick="elegirNumTrabajadores(4)">4</button>
+        <button class="config-num-btn" data-num="5" onclick="elegirNumTrabajadores(5)">5</button>
+        <button class="config-num-btn" data-num="6" onclick="elegirNumTrabajadores(6)">6</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalServicio" class="modal-overlay">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        Seleccionar servicio
+        <button class="close-btn" onclick="cerrarModalServicio()">Cerrar</button>
+      </div>
+      <div class="ig-list" id="servicioListContainer">
+        <div class="ig-item" style="text-align:center; color: #8E8E93;">Cargando...</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalManicuristaEvento" class="modal-overlay">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        Asignar manicurista
+        <button class="close-btn" onclick="cerrarModalManicuristaEvento()">Cerrar</button>
+      </div>
+      <div class="ig-list" id="manicuristaEventoListContainer">
+        <div class="ig-item" style="text-align:center; color:#8E8E93;">Cargando...</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-bar">
+    <div class="tab-item active" id="tab-booking" onclick="switchTab('booking')">Reserva</div>
+    <div class="tab-item" id="tab-agenda" onclick="switchTab('agenda')">Confirmar</div>
+  </div>
+
+  <script>
+    // 🔧 PEGA AQUÍ TU URL DE APPS SCRIPT (la que termina en /exec)
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz_vC73zfR0OxRum2qaDWGLDSaFA0YirDO4TvcuA3UsNv69DRS8ZW8A3mS4SSfeFJ7KfQ/exec';
+
+    function llamarAPI(action, params) {
+      params = params || {};
+      let query = Object.keys(params)
+        .map(k => encodeURIComponent(k) + '=' + encodeURIComponent(params[k]))
+        .join('&');
+      let url = APPS_SCRIPT_URL + '?action=' + encodeURIComponent(action) + (query ? '&' + query : '');
+
+      return fetch(url).then(res => {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.json();
+      });
+    }
+
+    let selectedDateType = 'hoy';
+    let customDate = null;
+    let labelNombre = 'hoy';
+    let igHandles = [];
+    let igLoaded = false;
+    let igLoading = false;
+    let igSeleccionado = '';
+    let numTrabajadores = parseInt(localStorage.getItem('numTrabajadores')) || 1;
+    let duracionMinutos = 90;
+    let buscandoHorarios = false;
+    let horarioSeleccionado = null;
+    let serviciosList = [];
+    let serviciosLoading = false;
+    let manicuristasList = [];
+    let eventosHoyList = null;
+    let eventosHoyLoading = false;
+
+    const nombresMeses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+
+    window.onload = function() {
+      cargarClientesIG();
+      cargarManicuristas();
+      cargarServicios();
+      cargarEventosHoy();
+      actualizarBotonConfigLabel();
+      actualizarHorarios();
+      ajustarEspacioInferior();
+      window.addEventListener('resize', ajustarEspacioInferior);
+    };
+
+    function switchTab(tab) {
+      document.getElementById('view-agenda').classList.remove('active');
+      document.getElementById('view-booking').classList.remove('active');
+      document.getElementById('tab-agenda').classList.remove('active');
+      document.getElementById('tab-booking').classList.remove('active');
+      document.getElementById('view-' + tab).classList.add('active');
+      document.getElementById('tab-' + tab).classList.add('active');
+
+      if (tab === 'agenda') {
+        cargarEventosHoy();
+      }
+    }
+
+    function selectDateType(type, element) {
+      document.getElementById('btnHoy').classList.remove('active');
+      document.getElementById('btnManana').classList.remove('active');
+      document.getElementById('btnFechaLabel').classList.remove('active');
+
+      element.classList.add('active');
+      selectedDateType = type;
+      labelNombre = type;
+
+      document.getElementById('btnFechaLabel').innerText = 'Fecha';
+      actualizarHorarios();
+    }
+
+    function handleDatePick(input) {
+      if (input.value) {
+        selectedDateType = 'fecha';
+
+        let partes = input.value.split('-');
+        customDate = new Date(partes[0], partes[1] - 1, partes[2]);
+
+        let dia = ('0' + customDate.getDate()).slice(-2);
+        let mes = nombresMeses[customDate.getMonth()];
+
+        document.getElementById('btnFechaLabel').innerText = dia + ' ' + mes;
+        labelNombre = 'el ' + dia + ' de ' + mes;
+
+        document.getElementById('btnHoy').classList.remove('active');
+        document.getElementById('btnManana').classList.remove('active');
+        document.getElementById('btnFechaLabel').classList.add('active');
+
+        actualizarHorarios();
+      }
+    }
+
+    function getTargetDate() {
+      let targetDate = new Date();
+      if (selectedDateType === 'mañana') {
+        targetDate.setDate(targetDate.getDate() + 1);
+      } else if (selectedDateType === 'fecha' && customDate) {
+        targetDate = customDate;
+      }
+      return targetDate;
+    }
+
+    function actualizarBotonConfigLabel() {
+      document.getElementById('btnConfig').innerText = String(numTrabajadores).padStart(2, '0');
+    }
+
+    function abrirModalConfig() {
+      document.querySelectorAll('.config-num-btn').forEach(btn => {
+        btn.classList.toggle('selected', parseInt(btn.dataset.num) === numTrabajadores);
+      });
+      document.getElementById('modalConfig').classList.add('active');
+    }
+
+    function cerrarModalConfig() {
+      document.getElementById('modalConfig').classList.remove('active');
+    }
+
+    function elegirNumTrabajadores(num) {
+      numTrabajadores = num;
+      localStorage.setItem('numTrabajadores', num);
+      document.querySelectorAll('.config-num-btn').forEach(btn => {
+        btn.classList.toggle('selected', parseInt(btn.dataset.num) === num);
+      });
+      actualizarBotonConfigLabel();
+      setTimeout(cerrarModalConfig, 200);
+      actualizarHorarios();
+    }
+
+    function cargarClientesIG() {
+      igLoading = true;
+      llamarAPI('clientesIG')
+        .then(function(data) {
+          igHandles = data;
+          igLoaded = true;
+          igLoading = false;
+        })
+        .catch(function(error) {
+          igLoaded = false;
+          igLoading = false;
+          igHandles = [];
+          console.error('Error cargando IGs:', error.message);
+        });
+    }
+
+    function copiarHorarios() {
+      if (buscandoHorarios) return;
+
+      let targetDate = getTargetDate();
+
+      let btn = document.getElementById('btnCopiar');
+      let originalText = btn.innerText;
+      buscandoHorarios = true;
+      btn.innerText = "Buscando...";
+      btn.style.opacity = "0.7";
+      btn.disabled = true;
+
+      llamarAPI('horariosTexto', {
+        fecha: targetDate.toISOString(),
+        tipoDia: labelNombre,
+        numTrabajadores: numTrabajadores,
+        duracion: duracionMinutos
+      })
+        .then(function(textoFinal) {
+          buscandoHorarios = false;
+          btn.innerText = originalText;
+          btn.style.opacity = "1";
+          btn.disabled = false;
+
+          if (typeof textoFinal !== 'string') {
+            let msg = (textoFinal && textoFinal.error) ? textoFinal.error : 'Respuesta inesperada del servidor';
+            alert('Error: ' + msg);
+            return;
+          }
+
+          navigator.clipboard.writeText(textoFinal).then(() => {
+            mostrarToast('Copiado al portapapeles');
+          }).catch(err => {
+            let tempInput = document.createElement("textarea");
+            tempInput.value = textoFinal;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand("copy");
+            document.body.removeChild(tempInput);
+            mostrarToast('Copiado al portapapeles');
+          });
+        })
+        .catch(function(error) {
+          buscandoHorarios = false;
+          btn.innerText = originalText;
+          btn.style.opacity = "1";
+          btn.disabled = false;
+          alert('Error al calcular horarios: ' + error.message);
+        });
+    }
+
+    function actualizarHorarios() {
+      duracionMinutos = parseInt(document.getElementById('duracionSelect').value, 10);
+      horarioSeleccionado = null;
+
+      let targetDate = getTargetDate();
+      const container = document.getElementById('horariosBotonesContainer');
+      container.innerHTML = '<div style="color:var(--text-muted); font-size:14px;">Cargando horarios...</div>';
+
+      llamarAPI('horariosArray', {
+        fecha: targetDate.toISOString(),
+        numTrabajadores: numTrabajadores,
+        duracion: duracionMinutos
+      })
+        .then(function(horarios) {
+          container.innerHTML = '';
+
+          if (!Array.isArray(horarios)) {
+            let msg = (horarios && horarios.error) ? horarios.error : 'Error al cargar horarios';
+            container.innerHTML = '<div style="color:var(--text-muted); font-size:14px;">' + msg + '</div>';
+            return;
+          }
+
+          if (horarios.length === 0) {
+            container.innerHTML = '<div style="color:var(--text-muted); font-size:14px;">No hay espacio disponible</div>';
+            return;
+          }
+
+          horarios.forEach(hora => {
+            let btn = document.createElement('button');
+            btn.className = 'horario-btn';
+            btn.innerText = hora;
+            btn.onclick = function() {
+              if (horarioSeleccionado === hora) {
+                horarioSeleccionado = null;
+                btn.classList.remove('selected');
+              } else {
+                document.querySelectorAll('.horario-btn').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                horarioSeleccionado = hora;
+              }
+            };
+            container.appendChild(btn);
+          });
+          ajustarEspacioInferior();
+        })
+        .catch(function(error) {
+          container.innerHTML = '<div style="color:var(--text-muted); font-size:14px;">Error: ' + error.message + '</div>';
+        });
+    }
+
+    function cargarManicuristas() {
+      const select = document.getElementById('manicuristaSelect');
+      select.innerHTML = '<option value="">Cargando...</option>';
+
+      llamarAPI('manicuristas')
+        .then(function(data) {
+          manicuristasList = Array.isArray(data) ? data : [];
+          select.innerHTML = '';
+          if (manicuristasList.length === 0) {
+            select.innerHTML = '<option value="">No hay manicuristas registradas</option>';
+            return;
+          }
+          manicuristasList.forEach(nombre => {
+            let opt = document.createElement('option');
+            opt.value = nombre;
+            opt.innerText = nombre;
+            select.appendChild(opt);
+          });
+        })
+        .catch(function(error) {
+          select.innerHTML = '<option value="">Error al cargar</option>';
+          console.error('Error cargando manicuristas:', error.message);
+        });
+    }
+
+    function cargarServicios() {
+      serviciosLoading = true;
+      llamarAPI('servicios')
+        .then(function(data) {
+          serviciosLoading = false;
+          serviciosList = Array.isArray(data) ? data : [];
+        })
+        .catch(function(error) {
+          serviciosLoading = false;
+          console.error('Error cargando servicios:', error.message);
+        });
+    }
+
+    function abrirModalServicio() {
+      const modal = document.getElementById('modalServicio');
+      const container = document.getElementById('servicioListContainer');
+      modal.classList.add('active');
+
+      if (serviciosList.length > 0) {
+        pintarListaServicio();
+      } else {
+        container.innerHTML = '<div class="ig-item" style="text-align:center; color:#8E8E93;">Cargando...</div>';
+      }
+
+      if (serviciosLoading) return;
+
+      serviciosLoading = true;
+      llamarAPI('servicios')
+        .then(function(data) {
+          serviciosLoading = false;
+          serviciosList = Array.isArray(data) ? data : [];
+          pintarListaServicio();
+        })
+        .catch(function(error) {
+          serviciosLoading = false;
+          if (serviciosList.length === 0) {
+            container.innerHTML = '<div class="ig-item" style="text-align:center;">Error: ' + error.message + '</div>';
+          }
+        });
+    }
+
+    function pintarListaServicio() {
+      const container = document.getElementById('servicioListContainer');
+      container.innerHTML = '';
+
+      if (serviciosList.length > 0) {
+        serviciosList.forEach(servicio => {
+          let div = document.createElement('div');
+          div.className = 'ig-item';
+          div.innerText = servicio;
+          div.onclick = function() {
+            document.getElementById('servicioInput').value = servicio;
+            cerrarModalServicio();
+          };
+          container.appendChild(div);
+        });
+      } else {
+        container.innerHTML = '<div class="ig-item" style="text-align:center;">No hay servicios guardados aún</div>';
+      }
+    }
+
+    function cerrarModalServicio() {
+      document.getElementById('modalServicio').classList.remove('active');
+    }
+
+    function guardarServicioSiEsNuevo() {
+      const input = document.getElementById('servicioInput');
+      const valor = input.value.trim();
+      if (valor === '') return;
+
+      const yaExiste = serviciosList.some(s => s.toLowerCase() === valor.toLowerCase());
+      if (yaExiste) return;
+
+      llamarAPI('guardarServicio', { servicio: valor })
+        .then(function(resultado) {
+          if (resultado && resultado.ok && !resultado.existente) {
+            serviciosList.push(valor);
+            mostrarToast('Servicio guardado');
+          }
+        })
+        .catch(function(error) {
+          console.error('Error guardando servicio:', error.message);
+        });
+    }
+
+    function agendarCita() {
+      if (!horarioSeleccionado) {
+        alert('Selecciona un horario disponible primero.');
+        return;
+      }
+      const clienteNombre = document.getElementById('nombreClienta').value.trim();
+      if (clienteNombre === '') {
+        alert('Escribe o selecciona el nombre/IG de la clienta.');
+        return;
+      }
+      const manicurista = document.getElementById('manicuristaSelect').value;
+      if (!manicurista) {
+        alert('Selecciona una manicurista.');
+        return;
+      }
+      const servicio = document.getElementById('servicioInput').value.trim();
+      if (servicio === '') {
+        alert('Escribe o selecciona el servicio.');
+        return;
+      }
+
+      let targetDate = getTargetDate();
+      let btn = document.getElementById('btnAgendar');
+      let originalText = btn.innerText;
+      btn.innerText = 'Agendando...';
+      btn.disabled = true;
+      btn.style.opacity = '0.7';
+
+      llamarAPI('crearCita', {
+        fecha: targetDate.toISOString(),
+        hora: horarioSeleccionado,
+        duracion: duracionMinutos,
+        manicurista: manicurista,
+        cliente: clienteNombre,
+        servicio: servicio,
+        ig: igSeleccionado
+      })
+        .then(function(resultado) {
+          btn.innerText = originalText;
+          btn.disabled = false;
+          btn.style.opacity = '1';
+
+          if (!resultado || !resultado.ok) {
+            alert('Error al agendar: ' + (resultado && resultado.error ? resultado.error : 'desconocido'));
+            return;
+          }
+
+          mostrarToast('Cita agendada ✓');
+
+          horarioSeleccionado = null;
+          document.getElementById('nombreClienta').value = '';
+          document.getElementById('servicioInput').value = '';
+          igSeleccionado = '';
+          document.getElementById('igSeleccionadoLabel').style.display = 'none';
+          eventosHoyList = null;
+
+          actualizarHorarios();
+        })
+        .catch(function(error) {
+          btn.innerText = originalText;
+          btn.disabled = false;
+          btn.style.opacity = '1';
+          alert('Error al agendar: ' + error.message);
+        });
+    }
+
+    function pintarEventosHoy(eventos) {
+      const container = document.getElementById('eventosListContainer');
+      container.innerHTML = '';
+
+      if (eventos.length === 0) {
+        container.innerHTML = '<div style="color:var(--text-muted); font-size:14px; text-align:center; padding:20px 0;">No hay citas para hoy</div>';
+        return;
+      }
+
+      eventos.forEach(ev => {
+        let row = document.createElement('div');
+        row.className = 'evento-item';
+
+        let infoDiv = document.createElement('div');
+        infoDiv.style.flex = '1';
+        infoDiv.style.overflow = 'hidden';
+
+        let nombreDiv = document.createElement('div');
+        nombreDiv.className = 'evento-nombre';
+        nombreDiv.innerText = ev.clienteNombre;
+
+        let horaDiv = document.createElement('div');
+        horaDiv.className = 'evento-hora';
+        horaDiv.innerText = ev.horaTexto + (ev.servicio ? ' · ' + ev.servicio : '');
+
+        infoDiv.appendChild(nombreDiv);
+        infoDiv.appendChild(horaDiv);
+
+        let btnManicurista = document.createElement('button');
+        btnManicurista.className = 'btn-square';
+        btnManicurista.innerText = (ev.manicuristaAbrev && ev.manicuristaAbrev.trim() !== '') ? ev.manicuristaAbrev.trim() : '···';
+        btnManicurista.onclick = function() {
+          abrirModalManicuristaEvento(ev.id, btnManicurista);
+        };
+
+        let btnConfirmar = document.createElement('button');
+        btnConfirmar.className = 'btn-square';
+        btnConfirmar.innerText = '✓';
+        btnConfirmar.onclick = function() {
+          confirmarCitaEvento(ev);
+        };
+
+        row.appendChild(infoDiv);
+        row.appendChild(btnManicurista);
+        row.appendChild(btnConfirmar);
+        container.appendChild(row);
+      });
+
+      ajustarEspacioInferior();
+    }
+
+    function cargarEventosHoy() {
+      const container = document.getElementById('eventosListContainer');
+
+      if (eventosHoyList !== null) {
+        pintarEventosHoy(eventosHoyList);
+      } else if (container) {
+        container.innerHTML = '<div style="color:var(--text-muted); font-size:14px; text-align:center; padding:20px 0;">Cargando citas...</div>';
+      }
+
+      if (eventosHoyLoading) return;
+
+      eventosHoyLoading = true;
+      llamarAPI('eventosHoy')
+        .then(function(eventos) {
+          eventosHoyLoading = false;
+
+          if (!Array.isArray(eventos)) {
+            if (eventosHoyList === null && container) {
+              let msg = (eventos && eventos.error) ? eventos.error : 'Error al cargar citas';
+              container.innerHTML = '<div style="color:var(--text-muted); font-size:14px; text-align:center; padding:20px 0;">' + msg + '</div>';
+            }
+            return;
+          }
+
+          eventosHoyList = eventos;
+          if (document.getElementById('view-agenda').classList.contains('active')) {
+            pintarEventosHoy(eventosHoyList);
+          }
+        })
+        .catch(function(error) {
+          eventosHoyLoading = false;
+          if (eventosHoyList === null && container) {
+            container.innerHTML = '<div style="color:var(--text-muted); font-size:14px; text-align:center; padding:20px 0;">Error: ' + error.message + '</div>';
+          }
+        });
+    }
+
+    let eventoManicuristaActualId = null;
+
+    function abrirModalManicuristaEvento(eventId, btnRef) {
+      eventoManicuristaActualId = eventId;
+      const container = document.getElementById('manicuristaEventoListContainer');
+      container.innerHTML = '';
+
+      if (manicuristasList.length === 0) {
+        container.innerHTML = '<div class="ig-item" style="text-align:center;">No hay manicuristas registradas</div>';
+      } else {
+        manicuristasList.forEach(nombre => {
+          let div = document.createElement('div');
+          div.className = 'ig-item';
+          div.innerText = nombre;
+          div.onclick = function() {
+            asignarManicuristaAEvento(eventId, nombre, btnRef);
+          };
+          container.appendChild(div);
+        });
+      }
+
+      document.getElementById('modalManicuristaEvento').classList.add('active');
+    }
+
+    function cerrarModalManicuristaEvento() {
+      document.getElementById('modalManicuristaEvento').classList.remove('active');
+    }
+
+    function asignarManicuristaAEvento(eventId, nombre, btnRef) {
+      llamarAPI('asignarManicurista', { eventId: eventId, manicurista: nombre })
+        .then(function(resultado) {
+          cerrarModalManicuristaEvento();
+          if (resultado && resultado.ok) {
+            btnRef.innerText = resultado.abrev.trim() !== '' ? resultado.abrev.trim() : '···';
+            mostrarToast('Manicurista asignada');
+            eventosHoyList = null;
+          } else {
+            alert('Error: ' + (resultado && resultado.error ? resultado.error : 'desconocido'));
+          }
+        })
+        .catch(function(error) {
+          cerrarModalManicuristaEvento();
+          alert('Error: ' + error.message);
+        });
+    }
+
+    function confirmarCitaEvento(ev) {
+      const mensaje = 'Preciosa, confirmamos tu cita a las ' + ev.horaTexto + ', te esperamos 💕';
+
+      function copiarMensaje(mostrarComoPegar) {
+        navigator.clipboard.writeText(mensaje).then(() => {
+          mostrarToast(mostrarComoPegar ? 'Mensaje copiado, pégalo en el chat' : 'Mensaje copiado al portapapeles');
+        }).catch(() => {
+          let tempInput = document.createElement("textarea");
+          tempInput.value = mensaje;
+          document.body.appendChild(tempInput);
+          tempInput.select();
+          document.execCommand("copy");
+          document.body.removeChild(tempInput);
+          mostrarToast('Mensaje copiado al portapapeles');
+        });
+      }
+
+      if (ev.ig && ev.ig.trim() !== '') {
+        let usuario = ev.ig.trim().replace(/^@/, '');
+        copiarMensaje(true);
+        window.open('https://ig.me/m/' + usuario, '_blank');
+      } else {
+        copiarMensaje(false);
+      }
+    }
+
+    function mostrarToast(mensaje) {
+      let toast = document.getElementById('toast');
+      if (mensaje) toast.innerText = mensaje;
+      toast.style.top = "20px";
+      setTimeout(() => { toast.style.top = "-50px"; }, 2500);
+    }
+
+    function abrirModalIG() {
+      const modal = document.getElementById('modalIG');
+      const container = document.getElementById('igListContainer');
+
+      modal.classList.add('active');
+
+      if (igLoaded && igHandles.length > 0) {
+        pintarListaIG();
+      } else {
+        container.innerHTML = '<div class="ig-item" style="text-align:center; color: #8E8E93;">Cargando lista...</div>';
+      }
+
+      if (igLoading) return;
+
+      igLoading = true;
+      llamarAPI('clientesIG')
+        .then(function(data) {
+          igLoading = false;
+          igHandles = data;
+          igLoaded = true;
+          pintarListaIG();
+        })
+        .catch(function(error) {
+          igLoading = false;
+          if (!igLoaded) {
+            container.innerHTML = '<div class="ig-item" style="text-align:center;">Error: ' + error.message + '</div>';
+          }
+        });
+    }
+
+    function pintarListaIG() {
+      const container = document.getElementById('igListContainer');
+      container.innerHTML = '';
+
+      if (igHandles.length > 0) {
+        igHandles.forEach(ig => {
+          let div = document.createElement('div');
+          div.className = 'ig-item';
+          div.innerText = ig;
+          div.onclick = function() {
+            igSeleccionado = ig;
+            const label = document.getElementById('igSeleccionadoLabel');
+            label.innerText = ig;
+            label.style.display = 'block';
+            cerrarModalIG();
+          };
+          container.appendChild(div);
+        });
+      } else {
+        container.innerHTML = '<div class="ig-item" style="text-align:center;">No hay clientas agendadas para hoy</div>';
+      }
+    }
+
+    function cerrarModalIG() {
+      document.getElementById('modalIG').classList.remove('active');
+    }
+
+    function ajustarEspacioInferior() {
+      const tabBar = document.querySelector('.tab-bar');
+      const alturaBarra = tabBar ? tabBar.offsetHeight : 90;
+      const espacio = (alturaBarra + 24) + 'px';
+      document.getElementById('view-booking').style.paddingBottom = espacio;
+      document.getElementById('view-agenda').style.paddingBottom = espacio;
+    }
+  </script>
+</body>
+</html>
