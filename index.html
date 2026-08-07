@@ -9,7 +9,7 @@
     window.OneSignalDeferred = window.OneSignalDeferred || [];
     OneSignalDeferred.push(async function(OneSignal) {
       await OneSignal.init({
-        appId: "PEGA_AQUI_TU_APP_ID_DE_ONESIGNAL",
+        appId: "ecd032a3-173d-410c-b6ee-be8d7bfee804",
       });
     });
   </script>
@@ -212,7 +212,10 @@
       <div class="booking-content">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
           <div class="title">Booking</div>
-          <button onclick="abrirModalConfig()" id="btnConfig" style="background:#E3E3E8; border:none; width:40px; height:40px; border-radius:12px; font-size:15px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--text-main);">01</button>  
+         <div style="display:flex; gap:8px;">
+            <button onclick="activarNotificaciones()" style="background:#E3E3E8; border:none; width:40px; height:40px; border-radius:12px; font-size:16px; cursor:pointer;">🔔</button>
+            <button onclick="abrirModalConfig()" id="btnConfig" style="background:#E3E3E8; border:none; width:40px; height:40px; border-radius:12px; font-size:15px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--text-main);">01</button>
+          </div>
         </div>
 
         <div class="segmented-control">
