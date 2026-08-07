@@ -1,1 +1,133 @@
-https://agenciammedia-debug.github.io/booking-app/abrir.html
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="theme-color" content="#F2F2F7">
+  <title>Abrir chat</title>
+  <style>
+    :root {
+      --apple-blue: #007AFF;
+      --bg-color: #F2F2F7;
+      --text-main: #1C1C1E;
+      --text-muted: #8E8E93;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg-color);
+      color: var(--text-main);
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 24px;
+      -webkit-font-smoothing: antialiased;
+    }
+    .eyebrow {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-muted);
+      letter-spacing: 0.2px;
+      margin-bottom: 6px;
+    }
+    .handle {
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: -0.8px;
+      margin: 0 0 4px 0;
+      word-break: break-all;
+    }
+    .sub {
+      font-size: 15px;
+      color: var(--text-muted);
+      margin: 0 0 32px 0;
+    }
+    .btn {
+      display: block;
+      width: 100%;
+      text-align: center;
+      text-decoration: none;
+      font-size: 17px;
+      font-weight: 600;
+      padding: 16px;
+      border-radius: 14px;
+      margin-bottom: 12px;
+      transition: transform 0.1s ease;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn-app {
+      background: var(--apple-blue);
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(0, 122, 255, 0.32);
+    }
+    .btn-web {
+      background: #E3E3E8;
+      color: var(--text-main);
+    }
+    .nota {
+      font-size: 13px;
+      color: var(--text-muted);
+      text-align: center;
+      margin-top: 20px;
+      line-height: 1.5;
+    }
+    .vacio { color: var(--text-muted); font-size: 17px; text-align: center; }
+    @media (prefers-reduced-motion: reduce) {
+      .btn:active { transform: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="contenido"></div>
+
+  <script>
+    (function () {
+      var params = new URLSearchParams(location.search);
+      var usuario = (params.get('u') || '').trim().replace(/^@/, '');
+      var contenido = document.getElementById('contenido');
+
+      if (!usuario) {
+        contenido.innerHTML =
+          '<p class="vacio">No llegó el usuario de la clienta.</p>' +
+          '<a class="btn btn-web" href="https://www.instagram.com/direct/inbox/">Abrir bandeja de Instagram</a>';
+        return;
+      }
+
+      var urlWeb = 'https://ig.me/m/' + encodeURIComponent(usuario);
+      var esAndroid = /Android/i.test(navigator.userAgent);
+      var esIOS = /iPad|iPhone|iPod/i.test(navigator.userAgent);
+
+      // Android: intent:// obliga al sistema a entregarle el link a la app de Instagram.
+      // iOS: el esquema instagram:// abre la app; cae en el perfil, desde ahí "Mensaje".
+      var urlApp;
+      if (esAndroid) {
+        urlApp = 'intent://ig.me/m/' + encodeURIComponent(usuario) +
+                 '#Intent;scheme=https;package=com.instagram.android;' +
+                 'S.browser_fallback_url=' + encodeURIComponent(urlWeb) + ';end';
+      } else if (esIOS) {
+        urlApp = 'instagram://user?username=' + encodeURIComponent(usuario);
+      } else {
+        urlApp = urlWeb;
+      }
+
+      contenido.innerHTML =
+        '<div class="eyebrow">Solicitud de cita</div>' +
+        '<h1 class="handle">@' + usuario + '</h1>' +
+        '<p class="sub">Quiere agendar.</p>' +
+        '<a class="btn btn-app" id="btnApp" href="' + urlApp + '">Abrir el chat en Instagram</a>' +
+        '<a class="btn btn-web" href="' + urlWeb + '">Abrir en el navegador</a>' +
+        '<p class="nota">Si no se abre la app, usa el segundo botón y luego toca el ícono de mensajes.</p>';
+
+      // Intento automático: si el sistema lo permite, salta solo a la app.
+      // Si lo bloquea, los botones quedan listos para un toque manual.
+      setTimeout(function () {
+        try { window.location.href = urlApp; } catch (e) {}
+      }, 350);
+    })();
+  </script>
+
+</body>
+</html>
