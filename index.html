@@ -3,6 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <link rel="manifest" href="manifest.json">
+  <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+  <script>
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    OneSignalDeferred.push(async function(OneSignal) {
+      await OneSignal.init({
+        appId: "PEGA_AQUI_TU_APP_ID_DE_ONESIGNAL",
+      });
+    });
+  </script>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Booking">
@@ -202,7 +212,7 @@
       <div class="booking-content">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
           <div class="title">Booking</div>
-          <button onclick="abrirModalConfig()" id="btnConfig" style="background:#E3E3E8; border:none; width:40px; height:40px; border-radius:12px; font-size:15px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--text-main);">01</button>
+          <button onclick="abrirModalConfig()" id="btnConfig" style="background:#E3E3E8; border:none; width:40px; height:40px; border-radius:12px; font-size:15px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--text-main);">01</button>  
         </div>
 
         <div class="segmented-control">
@@ -988,6 +998,18 @@
       const espacio = (alturaBarra + 24) + 'px';
       document.getElementById('view-booking').style.paddingBottom = espacio;
       document.getElementById('view-agenda').style.paddingBottom = espacio;
+    }
+
+    function activarNotificaciones() {
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      OneSignalDeferred.push(async function(OneSignal) {
+        const permiso = await OneSignal.Notifications.requestPermission();
+        if (permiso) {
+          mostrarToast('Notificaciones activadas ✓');
+        } else {
+          mostrarToast('Permiso no concedido');
+        }
+      });
     }
   </script>
 </body>
