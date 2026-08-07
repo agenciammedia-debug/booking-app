@@ -1,0 +1,8 @@
+{
+  "name": "Booking App",
+  "short_name": "Booking",
+  "start_url": "https://agenciammedia-debug.github.io/booking-app/",
+  "display": "standalone",
+  "background_color": "#F2F2F7",
+  "theme_color": "#007AFF"
+}
