@@ -6,13 +6,15 @@
   <link rel="manifest" href="manifest.json">
   <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
   <script>
-    window.OneSignalDeferred = window.OneSignalDeferred || [];
-    OneSignalDeferred.push(async function(OneSignal) {
-      await OneSignal.init({
-        appId: "ecd032a3-173d-410c-b6ee-be8d7bfee804",
-      });
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(async function(OneSignal) {
+    await OneSignal.init({
+      appId: "ecd032a3-173d-410c-b6ee-be8d7bfee804",
+      serviceWorkerPath: "/booking-app/OneSignalSDKWorker.js",
+      serviceWorkerParam: { scope: "/booking-app/" }
     });
-  </script>
+  });
+</script>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Booking">
