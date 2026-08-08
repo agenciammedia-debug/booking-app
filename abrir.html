@@ -97,6 +97,9 @@
 
   <script>
     (function () {
+      // A donde vuelve la pantalla despues de saltar a Instagram.
+      var APP_BOOKING = 'https://agenciammedia-debug.github.io/booking-app/';
+
       var usuario = (new URLSearchParams(location.search).get('u') || '').trim().replace(/^@/, '');
       var zona = document.getElementById('zona');
 
@@ -114,6 +117,30 @@
       // Link: solo salta a la app si lo toca el usuario, por eso esta en un <a>
       // real y no en un location.href automatico.
       zona.setAttribute('href', 'https://ig.me/m/' + encodeURIComponent(usuario));
+
+      // Tras el toque, esta pantalla se retira: se reemplaza por la app de
+      // Booking para que al volver de Instagram no quede el enlace colgado.
+      var yaSalto = false;
+
+      zona.addEventListener('click', function () {
+        yaSalto = true;
+
+        document.addEventListener('visibilitychange', function alSalir() {
+          document.removeEventListener('visibilitychange', alSalir);
+          if (document.visibilityState === 'hidden') {
+            location.replace(APP_BOOKING);
+          }
+        });
+
+        // Respaldo: si el sistema congelo la pagina antes de navegar,
+        // se completa el reemplazo en cuanto vuelve a estar visible.
+        document.addEventListener('visibilitychange', function alVolver() {
+          if (yaSalto && document.visibilityState === 'visible') {
+            document.removeEventListener('visibilitychange', alVolver);
+            location.replace(APP_BOOKING);
+          }
+        });
+      });
     })();
   </script>
 
