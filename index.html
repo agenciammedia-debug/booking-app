@@ -390,6 +390,17 @@
 
     window.onload = function() {
       precargarClientaDesdeURL();
+
+      // Reacciona al toque de la notificación aunque la app ya estuviera abierta
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      window.OneSignalDeferred.push(function(OneSignal) {
+        OneSignal.Notifications.addEventListener('click', function(event) {
+          const extra = (event && event.notification &&
+                        (event.notification.additionalData || event.notification.data)) || {};
+          mostrarSolicitud(extra.ig, extra.nombre);
+        });
+      });
+
       cargarClientesIG();
       cargarManicuristas();
       cargarServicios();
@@ -400,19 +411,15 @@
       window.addEventListener('resize', ajustarEspacioInferior);
     };
 
-    function precargarClientaDesdeURL() {
-      const params = new URLSearchParams(window.location.search);
-      const ig     = (params.get('ig') || '').trim().replace(/^@/, '');
-      const nombre = (params.get('nombre') || '').trim();
-
+    function mostrarSolicitud(ig, nombre) {
+      ig = (ig || '').trim().replace(/^@/, '');
+      nombre = (nombre || '').trim();
       if (!ig && !nombre) return;
 
-      // El nombre va al campo de texto, editable por si quieres corregirlo
       if (nombre) {
         document.getElementById('nombreClienta').value = nombre;
       }
 
-      // El IG queda guardado igual que si lo hubieras elegido de la lista
       if (ig) {
         igSeleccionado = ig;
         const label = document.getElementById('igSeleccionadoLabel');
@@ -420,7 +427,42 @@
         label.style.display = 'block';
       }
 
-      // Limpia la URL: así, si recargas, no se vuelve a rellenar con datos viejos
+      const anterior = document.getElementById('bannerSolicitud');
+      if (anterior) anterior.remove();
+      if (!ig) return;
+
+      const barra = document.createElement('div');
+      barra.id = 'bannerSolicitud';
+      barra.style.cssText = 'position:fixed; top:0; left:0; right:0; z-index:500; display:flex; align-items:center; background:#007AFF; color:#fff; box-shadow:0 4px 14px rgba(0,0,0,0.18); padding-top:env(safe-area-inset-top);';
+
+      const enlace = document.createElement('a');
+      enlace.href = 'https://ig.me/m/' + encodeURIComponent(ig);
+      enlace.style.cssText = 'flex:1; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 8px 14px 16px; color:#fff; text-decoration:none; overflow:hidden;';
+      enlace.innerHTML =
+        '<div style="overflow:hidden;">' +
+          '<div style="font-size:12px; opacity:0.85;">Quiere agendar</div>' +
+          '<div style="font-size:16px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">@' + ig + '</div>' +
+        '</div>' +
+        '<span style="font-size:14px; font-weight:600; background:rgba(255,255,255,0.22); padding:8px 14px; border-radius:999px; white-space:nowrap;">Abrir DM</span>';
+
+      const cerrar = document.createElement('button');
+      cerrar.innerText = '✕';
+      cerrar.style.cssText = 'background:none; border:none; color:#fff; font-size:18px; padding:14px 16px; cursor:pointer; opacity:0.8;';
+      cerrar.onclick = function() { barra.remove(); };
+
+      barra.appendChild(enlace);
+      barra.appendChild(cerrar);
+      document.body.appendChild(barra);
+    }
+
+    function precargarClientaDesdeURL() {
+      const params = new URLSearchParams(window.location.search);
+      const ig     = params.get('ig');
+      const nombre = params.get('nombre');
+      if (!ig && !nombre) return;
+
+      mostrarSolicitud(ig, nombre);
+
       if (window.history && window.history.replaceState) {
         window.history.replaceState({}, '', window.location.pathname);
       }
