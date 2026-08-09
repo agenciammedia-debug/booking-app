@@ -397,6 +397,32 @@
       window.addEventListener('resize', ajustarEspacioInferior);
     };
 
+    function precargarClientaDesdeURL() {
+      const params = new URLSearchParams(window.location.search);
+      const ig     = (params.get('ig') || '').trim().replace(/^@/, '');
+      const nombre = (params.get('nombre') || '').trim();
+
+      if (!ig && !nombre) return;
+
+      // El nombre va al campo de texto, editable por si quieres corregirlo
+      if (nombre) {
+        document.getElementById('nombreClienta').value = nombre;
+      }
+
+      // El IG queda guardado igual que si lo hubieras elegido de la lista
+      if (ig) {
+        igSeleccionado = ig;
+        const label = document.getElementById('igSeleccionadoLabel');
+        label.innerText = '@' + ig;
+        label.style.display = 'block';
+      }
+
+      // Limpia la URL: así, si recargas, no se vuelve a rellenar con datos viejos
+      if (window.history && window.history.replaceState) {
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    }
+
     function switchTab(tab) {
       document.getElementById('view-agenda').classList.remove('active');
       document.getElementById('view-booking').classList.remove('active');
