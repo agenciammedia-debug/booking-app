@@ -41,7 +41,7 @@
       padding: env(safe-area-inset-top) 0 0 0;
       -webkit-font-smoothing: antialiased;
       display: flex; flex-direction: column;
-      height: 100vh; height: 100dvh; overflow: hidden;
+            position: fixed; inset: 0; overflow: hidden;
     }
 
     .view-container {
@@ -170,8 +170,8 @@
 
     /* Tab bar */
     .tab-bar {
-      position: fixed; bottom: 0; left: 0; right: 0;
-      background: rgba(255,255,255,0.85);
+            position: relative; flex-shrink: 0;
+      background: #F9F9F9;
       backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
       border-top: 0.5px solid rgba(0,0,0,0.1); display: flex;
       padding: 10px 0 calc(10px + env(safe-area-inset-bottom)); z-index: 100;
@@ -231,6 +231,9 @@
       border-radius: 6px; background: rgba(0,122,255,.15); border: 2px solid var(--apple-blue);
       color: var(--apple-blue); font-size: 12px; font-weight: 700; padding: 3px 6px;
     }
+        html { height: 100%; background: #F9F9F9; }
+    .view-container { background: var(--bg-color); }
+    .cal-evento { border: 1px solid rgba(255,255,255,.9); }
   </style>
 </head>
 <body>
@@ -418,13 +421,13 @@
       try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {}
     }
 
-    function llamarAPI(action, params) {
+        function llamarAPI(action, params, keepalive) {
       params = params || {};
       const query = Object.keys(params)
         .map(k => encodeURIComponent(k) + '=' + encodeURIComponent(params[k]))
         .join('&');
       const url = APPS_SCRIPT_URL + '?action=' + encodeURIComponent(action) + (query ? '&' + query : '');
-      return fetch(url, { cache: 'no-store' }).then(res => {
+            return fetch(url, { cache: 'no-store', keepalive: !!keepalive }).then(res => {
         if (!res.ok) throw new Error('HTTP ' + res.status);
         return res.json();
       });
@@ -486,8 +489,7 @@
     }
 
     function ajustarEspacioInferior() {
-      const tabBar = document.querySelector('.tab-bar');
-      const espacio = ((tabBar ? tabBar.offsetHeight : 90) + 24) + 'px';
+            const espacio = '24px';
       document.querySelectorAll('.view').forEach(v => v.style.paddingBottom = espacio);
     }
 
@@ -571,7 +573,9 @@
         });
       });
 
-      pintarSedeConfirmar();
+            pintarSedeConfirmar();
+      restaurarOutbox();
+      window.addEventListener('online', reintentarPendientes);
       cargarInit();
       activarSwipeCalendario();
       initCalendario();
@@ -582,14 +586,16 @@
 
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState !== 'visible') return;
-        marcarTodoViejo();
+                marcarTodoViejo();
+        reintentarPendientes();
         cargarInit();
         if (vistaActiva('agenda')) cargarEventosHoy();
         if (vistaActiva('calendario') && !hayModalAbierto()) cargarCalendario();
       });
 
       // Cada minuto: mueve la línea de "ahora" y trae cambios nuevos
-      setInterval(() => {
+            setInterval(() => {
+        if (citasPendientes.length) reintentarPendientes();
         if (document.visibilityState === 'visible' && vistaActiva('calendario') && !hayModalAbierto() && !calArrastrando) {
           cargarCalendario();
         }
@@ -743,7 +749,7 @@
       pintarCalendario();
     }
 
-    function guardarNuevaCita() {
+        function guardarNuevaCita() {
       if (!nuevaCita) return;
       const cliente = document.getElementById('nombreClienta').value.trim();
       if (!cliente) return alert('Escribe o selecciona el nombre/IG de la clienta.');
@@ -756,7 +762,11 @@
       const duracion = duracionNueva();
       const ig = igSeleccionado;
 
-      // 1) Muestra la cita al instante (en proceso)
+      const params = {
+        sede: sede, inicio: inicio, duracion: duracion,
+        manicurista: manicurista, cliente: cliente, servicio: servicio,
+        ig: ig, idem: idem
+      };
       const temp = {
         id: 'tmp_' + idem,
         titulo: cliente + ' - ' + servicio,
@@ -765,47 +775,88 @@
         inicio: inicio, fin: inicio + duracion * 60000,
         todoElDia: false, recurrente: false, ig: ig, pendiente: true
       };
-      const pend = { k: claveDia(sede, fecha), ev: temp };
+
+      // 1) Se guarda en el teléfono al instante (sobrevive si cierras la app)
+      const item = { idem: idem, sede: sede, fecha: fecha, params: params, temp: Object.assign({}, temp) };
+      const pend = { k: claveDia(sede, fecha), ev: temp, item: item };
       citasPendientes.push(pend);
+      guardarOutbox();
       const cache = diaCacheado(sede, fecha);
       if (cache) cache.push(temp);
 
-      const quitarDePendientes = () => {
-        const i = citasPendientes.indexOf(pend);
-        if (i >= 0) citasPendientes.splice(i, 1);
-      };
-
-      // 2) Cierra el popup de inmediato
+      // 2) Cierra el popup y muestra la cita
+      guardarServicioSiEsNuevo();
       document.getElementById('modalNueva').classList.remove('active');
       nuevaCita = null;
       limpiarSolicitud();
-      agregarServicioLocal(servicio);
       if (calSede === sede && fechaKeyLocal(calFecha) === fecha) {
         calEventos = cache ? clonar(cache) : calEventos.concat([Object.assign({}, temp)]);
         pintarCalendario();
       }
       mostrarToast('Agendando en ' + nombreSede(sede) + '...');
 
-      // 3) Guarda en segundo plano (idem evita duplicados)
-      llamarAPI('crearCita', {
-        sede: sede, inicio: inicio, duracion: duracion,
-        manicurista: manicurista, cliente: cliente, servicio: servicio,
-        ig: ig, idem: idem
-      })
+      // 3) Envía a Google en segundo plano
+      enviarCita(pend);
+    }
+
+    // ===================== BANDEJA DE SALIDA =====================
+    // Citas guardadas en el teléfono que aún no confirma Google. Se reenvían solas.
+    const OUTBOX_KEY = 'outboxCitas';
+    const enviando = new Set();
+
+    function guardarOutbox() {
+      guardarJSON(OUTBOX_KEY, citasPendientes.map(p => p.item));
+    }
+
+    function quitarPendiente(pend) {
+      const i = citasPendientes.indexOf(pend);
+      if (i >= 0) citasPendientes.splice(i, 1);
+      guardarOutbox();
+    }
+
+    function restaurarOutbox() {
+      (leerJSON(OUTBOX_KEY) || []).forEach(item => {
+        citasPendientes.push({ k: claveDia(item.sede, item.fecha), ev: Object.assign({}, item.temp), item: item });
+      });
+      reintentarPendientes();
+    }
+
+    function reintentarPendientes() {
+      citasPendientes.slice().forEach(p => enviarCita(p));
+    }
+
+    function enviarCita(pend) {
+      const item = pend.item;
+      if (enviando.has(item.idem)) return;
+      enviando.add(item.idem);
+
+      llamarAPI('crearCita', item.params, true)
         .then(r => {
-          if (!r || !r.ok) throw new Error((r && r.error) || 'desconocido');
-          Object.assign(temp, { id: r.id, titulo: r.titulo, manicurista: (r.abrev || '').trim(), pendiente: false });
-          quitarDePendientes();
-          mostrarToast('Cita agendada ✓ ' + cliente + ' · ' + formatHora12(new Date(inicio)));
+          if (!r || !r.ok) {
+            const err = new Error((r && r.error) || 'desconocido');
+            err.definitivo = true;
+            throw err;
+          }
+          Object.assign(pend.ev, { id: r.id, titulo: r.titulo, manicurista: (r.abrev || '').trim(), pendiente: false });
+          quitarPendiente(pend);
+          mostrarToast('Cita agendada ✓ ' + item.params.cliente + ' · ' + formatHora12(new Date(item.params.inicio)));
         })
         .catch(err => {
-          quitarDePendientes();
-          const arr = diaCacheado(sede, fecha);
-          if (arr) { const j = arr.indexOf(temp); if (j >= 0) arr.splice(j, 1); }
-          alert('No se pudo confirmar la cita de ' + cliente + ' (' + formatHora12(new Date(inicio)) + ', ' + nombreSede(sede) + '):\n' +
-                err.message + '\n\nRevisa el calendario antes de volver a intentarlo.');
+          if (!err.definitivo) {
+            // Sin conexión o app cerrada: queda guardada y se reintenta sola
+            mostrarToast('Sin conexión: la cita se enviará automáticamente');
+            return;
+          }
+          quitarPendiente(pend);
+          const arr = diaCacheado(item.sede, item.fecha);
+          if (arr) { const j = arr.indexOf(pend.ev); if (j >= 0) arr.splice(j, 1); }
+          alert('No se pudo agendar a ' + item.params.cliente + ' (' + formatHora12(new Date(item.params.inicio)) +
+                ', ' + nombreSede(item.sede) + '):\n' + err.message);
         })
-        .finally(() => refrescarTrasCambio(sede, [fecha]));
+        .finally(() => {
+          enviando.delete(item.idem);
+          refrescarTrasCambio(item.sede, [item.fecha]);
+        });
     }
 
     // ===================== SERVICIOS =====================
@@ -842,12 +893,16 @@
       return true;
     }
 
+        const serviciosGuardando = new Set();
     function guardarServicioSiEsNuevo() {
       const valor = document.getElementById('servicioInput').value.trim();
-      if (!valor || serviciosList.some(s => s.toLowerCase() === valor.toLowerCase())) return;
+      const clave = valor.toLowerCase();
+      if (!valor || serviciosGuardando.has(clave) || serviciosList.some(s => s.toLowerCase() === clave)) return;
+      serviciosGuardando.add(clave);
       llamarAPI('guardarServicio', { servicio: valor })
-        .then(r => { if (r && r.ok && !r.existente && agregarServicioLocal(valor)) mostrarToast('Servicio guardado'); })
-        .catch(() => {});
+        .then(r => { if (r && r.ok && !r.existente) agregarServicioLocal(valor); })
+        .catch(() => {})
+        .finally(() => serviciosGuardando.delete(clave));
     }
 
     // ===================== IG =====================
@@ -1041,13 +1096,8 @@
     const clonar = arr => arr.map(e => Object.assign({}, e));
     function etiquetaHora(h) { return (h % 12 || 12) + ' ' + (h >= 12 ? 'pm' : 'am'); }
     function minDesdeInicio(ms) { return (ms - calFecha.getTime()) / 60000 - CAL_HORA_INI * 60; }
-    function colorManicurista(ab) {
-      ab = (ab || '').trim();
-      if (!ab) return '#8E8E93';
-      let h = 0;
-      for (const c of ab) h = (h * 31 + c.charCodeAt(0)) >>> 0;
-      return CAL_COLORES[h % CAL_COLORES.length];
-    }
+       const CAL_COLOR_CITA = '#007AFF'; // color único para todas las citas
+    function colorManicurista() { return CAL_COLOR_CITA; }
 
     function initCalendario() {
       document.querySelectorAll('#sedeControl .seg-btn').forEach(b => b.classList.toggle('active', b.dataset.sede === calSede));
