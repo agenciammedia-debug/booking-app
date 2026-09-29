@@ -1,20 +1,20 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <link rel="manifest" href="manifest.json">
   <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
   <script>
-  window.OneSignalDeferred = window.OneSignalDeferred || [];
-  OneSignalDeferred.push(async function(OneSignal) {
-    await OneSignal.init({
-      appId: "ecd032a3-173d-410c-b6ee-be8d7bfee804",
-      serviceWorkerPath: "/booking-app/OneSignalSDKWorker.js",
-      serviceWorkerParam: { scope: "/booking-app/" }
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    OneSignalDeferred.push(async function(OneSignal) {
+      await OneSignal.init({
+        appId: "ecd032a3-173d-410c-b6ee-be8d7bfee804",
+        serviceWorkerPath: "/booking-app/OneSignalSDKWorker.js",
+        serviceWorkerParam: { scope: "/booking-app/" }
+      });
     });
-  });
-</script>
+  </script>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Booking">
@@ -27,20 +27,26 @@
       --text-main: #1C1C1E;
       --text-muted: #8E8E93;
       --border-color: #E5E5EA;
+      --fill: #E3E3E8;
+      --danger: #FF3B30;
     }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    button, input, select, textarea { font-family: inherit; }
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       background-color: var(--bg-color);
       color: var(--text-main);
-      margin: 0; padding: 0;
+      margin: 0;
+      padding: env(safe-area-inset-top) 0 0 0;
       -webkit-font-smoothing: antialiased;
       display: flex; flex-direction: column;
-      height: 100vh; overflow: hidden;
+      height: 100vh; height: 100dvh; overflow: hidden;
     }
 
     .view-container {
-      flex: 1; overflow-y: auto; padding-bottom: 24px;
+      flex: 1; overflow-y: auto; overflow-x: hidden;
       -webkit-overflow-scrolling: touch;
       overscroll-behavior: contain;
       touch-action: pan-y;
@@ -48,216 +54,222 @@
     .view { display: none; min-height: 100%; }
     .view.active { display: block; }
 
-    .booking-content { padding: 24px 16px 0 16px; }
-    .title { font-size: 28px; font-weight: 700; margin-bottom: 0; letter-spacing: -0.5px; }
+    .booking-content { padding: 20px 16px 0 16px; }
+    .title { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
+    .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .header-actions { display: flex; gap: 8px; }
+    .icon-btn {
+      background: var(--fill); border: none; width: 40px; height: 40px; border-radius: 12px;
+      font-size: 15px; font-weight: 700; cursor: pointer; color: var(--text-main);
+      display: flex; align-items: center; justify-content: center;
+    }
 
+    /* Segmented control */
     .segmented-control {
-      display: flex; background-color: #E3E3E8;
-      border-radius: 8px; padding: 2px; margin-bottom: 24px;
+      display: flex; background-color: var(--fill);
+      border-radius: 9px; padding: 2px; margin-bottom: 16px;
     }
     .seg-btn {
       flex: 1; text-align: center; padding: 8px 0;
       font-size: 14px; font-weight: 500;
       color: var(--text-main); background: transparent;
-      border: none; border-radius: 6px; cursor: pointer;
+      border: none; border-radius: 7px; cursor: pointer;
       transition: all 0.2s ease;
     }
     .seg-btn.active {
-      background-color: white;
+      background-color: #fff;
       box-shadow: 0 3px 8px rgba(0,0,0,0.12), 0 3px 1px rgba(0,0,0,0.04);
     }
+    .sede-control .seg-btn { font-weight: 600; }
+    .sede-control .seg-btn.active { background: var(--apple-blue); color: #fff; }
 
     .fecha-wrapper { position: relative; flex: 1; display: flex; }
-    #fechaPicker { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+    #fechaPicker { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
     #btnFechaLabel { width: 100%; pointer-events: none; }
 
-    .btn-primary {
-      width: 100%; background-color: var(--apple-blue);
-      color: white; font-size: 17px; font-weight: 600;
-      padding: 14px; border: none; border-radius: 12px;
-      cursor: pointer; box-shadow: 0 4px 10px rgba(0, 122, 255, 0.3);
-      transition: transform 0.1s ease;
-    }
-    .btn-primary:active { transform: scale(0.97); }
-
-    .btn-secondary {
-      width: 100%; background-color: #1C1C1E;
-      color: white; font-size: 17px; font-weight: 600;
+    /* Botones */
+    .btn-primary, .btn-secondary, .btn-danger {
+      width: 100%; font-size: 17px; font-weight: 600;
       padding: 14px; border: none; border-radius: 12px;
       cursor: pointer; transition: transform 0.1s ease;
     }
-    .btn-secondary:active { transform: scale(0.97); }
+    .btn-primary { background: var(--apple-blue); color: #fff; box-shadow: 0 4px 10px rgba(0,122,255,0.3); }
+    .btn-secondary { background: #1C1C1E; color: #fff; }
+    .btn-danger { background: #FFE5E5; color: var(--danger); margin-top: 10px; }
+    .btn-primary:active, .btn-secondary:active, .btn-danger:active { transform: scale(0.97); }
+    button:disabled { opacity: 0.6; }
 
-    .client-input-wrapper { display: flex; margin-top: 24px; gap: 12px; }
-    .client-input {
-      flex: 1; background: #E3E3E8; border: none; border-radius: 12px;
-      padding: 14px 16px; font-size: 17px; color: var(--text-main); outline: none;
+    /* Campos */
+    .field { margin-top: 20px; }
+    .field-label {
+      font-size: 13px; color: var(--text-muted); font-weight: 500;
+      margin-bottom: 6px; padding-left: 4px; display: block;
     }
+    .input-row { display: flex; gap: 12px; }
+    .client-input, .duracion-select {
+      width: 100%; height: 50px; min-width: 0; margin: 0;
+      background: var(--fill); border: none; border-radius: 12px;
+      padding: 0 16px; font-size: 17px; color: var(--text-main); outline: none;
+      -webkit-appearance: none; appearance: none;
+    }
+    .input-row .client-input { flex: 1; width: auto; }
     .client-input::placeholder { color: var(--text-muted); }
-
-    .config-num-btn {
-      width: 50px; height: 50px; border-radius: 50%; border: none;
-      background: #E3E3E8; color: var(--text-main); font-size: 18px; font-weight: 600;
-      cursor: pointer; transition: all 0.15s ease;
+    .duracion-select {
+      padding-right: 40px; cursor: pointer;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238E8E93' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 16px center;
     }
-    .config-num-btn.selected {
-      background: var(--apple-blue); color: white;
-      box-shadow: 0 4px 10px rgba(0, 122, 255, 0.3);
-    }
+    input[type="date"].client-input, input[type="time"].client-input { display: flex; align-items: center; }
+    input::-webkit-date-and-time-value { text-align: left; }
 
     .btn-ig {
-      background: #1C1C1E; color: white; border: none; border-radius: 12px;
-      width: 50px; display: flex; justify-content: center; align-items: center;
-      cursor: pointer; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+      background: #1C1C1E; color: #fff; border: none; border-radius: 12px;
+      width: 50px; height: 50px; flex-shrink: 0;
+      display: flex; justify-content: center; align-items: center;
+      cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.25);
     }
     .btn-ig:active { transform: scale(0.95); }
 
+    #igSeleccionadoLabel { display: none; font-size: 12px; color: var(--apple-blue); font-weight: 600; margin-bottom: 6px; padding-left: 4px; }
+
+    /* Horarios */
+    #horariosBotonesContainer {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+      gap: 8px; margin-top: 12px;
+    }
+    .horario-btn {
+      width: 100%; background: var(--fill); color: var(--text-main); border: none; border-radius: 20px;
+      padding: 10px 0; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.15s ease;
+    }
+    .horario-btn.selected { background: var(--apple-blue); color: #fff; box-shadow: 0 4px 10px rgba(0,122,255,0.3); }
+    .horarios-msg { grid-column: 1 / -1; color: var(--text-muted); font-size: 14px; padding: 4px; }
+
+    /* Config manicuristas */
+    .config-grid { display: flex; gap: 10px; padding: 20px 16px 10px; flex-wrap: wrap; justify-content: center; }
+    .config-num-btn {
+      width: 50px; height: 50px; border-radius: 50%; border: none;
+      background: var(--fill); color: var(--text-main); font-size: 18px; font-weight: 600;
+      cursor: pointer; transition: all 0.15s ease;
+    }
+    .config-num-btn.selected { background: var(--apple-blue); color: #fff; box-shadow: 0 4px 10px rgba(0,122,255,0.3); }
+
+    /* Lista Confirmar */
     .btn-square {
-      background: #1C1C1E; color: white; border: none; border-radius: 10px;
+      background: #1C1C1E; color: #fff; border: none; border-radius: 10px;
       width: 42px; height: 42px; display: flex; align-items: center; justify-content: center;
       cursor: pointer; flex-shrink: 0; font-size: 13px; font-weight: 700;
     }
     .btn-square:active { transform: scale(0.92); }
+    .evento-item { display: flex; align-items: center; gap: 10px; padding: 14px 0; border-bottom: 0.5px solid var(--border-color); }
+    .evento-info { flex: 1; min-width: 0; }
+    .evento-nombre { font-size: 16px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .evento-hora { font-size: 12px; color: var(--text-muted); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .empty-msg { color: var(--text-muted); font-size: 14px; text-align: center; padding: 20px 0; }
 
-    .horario-btn {
-      background: #E3E3E8; color: var(--text-main); border: none; border-radius: 20px;
-      padding: 10px 16px; font-size: 14px; font-weight: 500; cursor: pointer;
-      transition: all 0.15s ease;
-    }
-    .horario-btn.selected {
-      background: var(--apple-blue); color: white;
-      box-shadow: 0 4px 10px rgba(0, 122, 255, 0.3);
-    }
-
-    .duracion-select {
-      width: 100%; background: #E3E3E8; border: none; border-radius: 12px;
-      padding: 14px 16px; font-size: 17px; color: var(--text-main); outline: none;
-    }
-
-    .field-label {
-      font-size: 13px; color: var(--text-muted); font-weight: 500; margin-bottom: 6px; display: block;
-    }
-
-    .evento-item {
-      display: flex; align-items: center; gap: 10px; padding: 14px 0;
-      border-bottom: 0.5px solid var(--border-color);
-    }
-    .evento-nombre {
-      font-size: 16px; font-weight: 500; color: var(--text-main);
-      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    }
-    .evento-hora { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
-
+    /* Modales */
     .modal-overlay {
-      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      position: fixed; inset: 0;
       background: rgba(0,0,0,0.3); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
       z-index: 999; opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
       display: flex; align-items: flex-end;
     }
     .modal-overlay.active { opacity: 1; pointer-events: auto; }
     .modal-sheet {
-      background: white; width: 100%; max-height: 70vh; border-radius: 20px 20px 0 0;
+      background: #fff; width: 100%; max-height: 80vh; border-radius: 20px 20px 0 0;
       transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-      display: flex; flex-direction: column; padding-bottom: 30px;
+      display: flex; flex-direction: column;
+      padding-bottom: calc(20px + env(safe-area-inset-bottom));
     }
     .modal-overlay.active .modal-sheet { transform: translateY(0); }
     .modal-header {
-      padding: 16px; text-align: center; font-weight: 600;
-      border-bottom: 0.5px solid var(--border-color); position: relative; font-size: 17px;
+      padding: 16px; text-align: center; font-weight: 600; font-size: 17px;
+      border-bottom: 0.5px solid var(--border-color); position: relative; flex-shrink: 0;
     }
     .modal-header .close-btn {
-      position: absolute; right: 16px; top: 16px; color: var(--apple-blue);
-      background: none; border: none; font-size: 17px; cursor: pointer; font-weight: 500;
+      position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
+      color: var(--apple-blue); background: none; border: none; font-size: 17px; cursor: pointer; font-weight: 500;
     }
-    .ig-list { overflow-y: auto; padding: 0 16px; }
-    .ig-item {
-      padding: 16px 0; border-bottom: 0.5px solid var(--border-color);
-      color: var(--text-main); cursor: pointer; font-size: 17px;
-    }
+    .modal-body { padding: 16px; overflow-y: auto; min-height: 0; }
+    .ig-list { overflow-y: auto; padding: 0 16px; min-height: 0; }
+    .ig-item { padding: 16px 0; border-bottom: 0.5px solid var(--border-color); cursor: pointer; font-size: 17px; }
     .ig-item:last-child { border-bottom: none; }
+    .ig-item.muted { text-align: center; color: var(--text-muted); cursor: default; }
 
+    /* Tab bar */
     .tab-bar {
-      position: fixed; bottom: 0; width: 100%; background: rgba(255, 255, 255, 0.85);
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: rgba(255,255,255,0.85);
       backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-      border-top: 0.5px solid rgba(0,0,0,0.1); display: flex; justify-content: space-around;
-      padding: 12px 0 24px 0; z-index: 100;
+      border-top: 0.5px solid rgba(0,0,0,0.1); display: flex;
+      padding: 10px 0 calc(10px + env(safe-area-inset-bottom)); z-index: 100;
     }
     .tab-item {
-      display: flex; flex-direction: column; align-items: center;
-      color: var(--text-muted); cursor: pointer; font-size: 16px; font-weight: 600; flex: 1;
+      flex: 1; text-align: center; padding: 4px 0;
+      color: var(--text-muted); cursor: pointer; font-size: 16px; font-weight: 600;
     }
     .tab-item.active { color: var(--apple-blue); }
 
     #toast {
-      position: fixed; top: -50px; left: 50%; transform: translateX(-50%);
-      background: rgba(0,0,0,0.8); color: white; padding: 12px 24px;
-      border-radius: 20px; font-size: 15px; font-weight: 500;
+      position: fixed; top: -80px; left: 50%; transform: translateX(-50%);
+      background: rgba(0,0,0,0.8); color: #fff; padding: 12px 24px;
+      border-radius: 20px; font-size: 15px; font-weight: 500; white-space: nowrap;
       transition: top 0.3s ease; z-index: 1000;
     }
 
-        .cal-nav { display:flex; align-items:center; gap:8px; margin-bottom:12px; }
-    .cal-nav-btn { background:#E3E3E8; border:none; width:40px; height:40px; border-radius:12px; font-size:22px; cursor:pointer; color:var(--text-main); }
-    .cal-hoy-btn { background:#E3E3E8; border:none; height:40px; padding:0 14px; border-radius:12px; font-size:14px; font-weight:600; cursor:pointer; color:var(--apple-blue); }
-    .cal-fecha-wrap { flex:1; position:relative; text-align:center; font-size:16px; font-weight:600; height:40px; line-height:40px; white-space:nowrap; overflow:hidden; }
-    #calFechaPicker { position:absolute; inset:0; opacity:0; width:100%; height:100%; }
-    .cal-grid { padding-right:8px; transition:opacity .2s; }
-    .cal-allday { padding:0 0 8px 52px; display:flex; flex-direction:column; gap:4px; }
-    .cal-allday-item { background:#8E8E93; color:#fff; border-radius:6px; padding:4px 8px; font-size:12px; font-weight:600; cursor:pointer; }
-    .cal-body { position:relative; margin-top:10px; }
-    .cal-line { position:absolute; left:48px; right:0; border-top:0.5px solid var(--border-color); }
-    .cal-hora { position:absolute; left:0; width:42px; text-align:right; font-size:11px; color:var(--text-muted); transform:translateY(-50%); }
-    .cal-eventos { position:absolute; top:0; bottom:0; left:52px; right:0; }
-    .cal-evento { position:absolute; border-radius:6px; padding:3px 6px; color:#fff; overflow:hidden; box-sizing:border-box; font-size:12px; line-height:1.25; cursor:pointer; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; transition:box-shadow .15s, transform .15s; }
-    .cal-evento.arrastrando { z-index:50; box-shadow:0 8px 20px rgba(0,0,0,.3); transform:scale(1.03); transition:none; }
-    .cal-evento-fijo { opacity:.7; }
-    .cal-ev-t { font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .cal-ev-s { opacity:.9; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .cal-now { position:absolute; left:0; right:0; border-top:2px solid #FF3B30; z-index:40; pointer-events:none; }
-    .cal-now::before { content:''; position:absolute; left:-5px; top:-6px; width:10px; height:10px; border-radius:50%; background:#FF3B30; }
-    .btn-danger { width:100%; margin-top:10px; background:#FFE5E5; color:#FF3B30; font-size:17px; font-weight:600; padding:14px; border:none; border-radius:12px; cursor:pointer; }
+    /* Calendario */
+    .cal-nav { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .cal-nav-btn { background: var(--fill); border: none; width: 40px; height: 40px; border-radius: 12px; font-size: 22px; cursor: pointer; color: var(--text-main); flex-shrink: 0; }
+    .cal-hoy-btn { background: var(--fill); border: none; height: 40px; padding: 0 14px; border-radius: 12px; font-size: 14px; font-weight: 600; cursor: pointer; color: var(--apple-blue); flex-shrink: 0; }
+    .cal-fecha-wrap { flex: 1; min-width: 0; position: relative; text-align: center; font-size: 16px; font-weight: 600; height: 40px; line-height: 40px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    #calFechaPicker { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; }
+    .cal-grid { padding: 0 8px 0 0; transition: opacity .2s; }
+    .cal-grid.slide-izq { animation: slideIzq .22s ease; }
+    .cal-grid.slide-der { animation: slideDer .22s ease; }
+    @keyframes slideIzq { from { transform: translateX(40px); opacity: .3; } to { transform: none; opacity: 1; } }
+    @keyframes slideDer { from { transform: translateX(-40px); opacity: .3; } to { transform: none; opacity: 1; } }
+    .cal-allday { padding: 0 0 8px 52px; display: flex; flex-direction: column; gap: 4px; }
+    .cal-allday-item { background: var(--text-muted); color: #fff; border-radius: 6px; padding: 4px 8px; font-size: 12px; font-weight: 600; cursor: pointer; }
+    .cal-body { position: relative; margin-top: 10px; }
+    .cal-line { position: absolute; left: 48px; right: 0; border-top: 0.5px solid var(--border-color); }
+    .cal-hora { position: absolute; left: 0; width: 42px; text-align: right; font-size: 11px; color: var(--text-muted); transform: translateY(-50%); }
+    .cal-eventos { position: absolute; top: 0; bottom: 0; left: 52px; right: 0; }
+    .cal-evento {
+      position: absolute; border-radius: 6px; padding: 3px 6px; color: #fff; overflow: hidden;
+      font-size: 12px; line-height: 1.25; cursor: pointer;
+      -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+      transition: box-shadow .15s, transform .15s;
+    }
+    .cal-evento.arrastrando { z-index: 50; box-shadow: 0 8px 20px rgba(0,0,0,.3); transform: scale(1.03); transition: none; }
+    .cal-evento-fijo { opacity: .7; }
+    .cal-ev-t { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cal-ev-s { opacity: .9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cal-now { position: absolute; left: 0; right: 0; border-top: 2px solid var(--danger); z-index: 40; pointer-events: none; }
+    .cal-now::before { content: ''; position: absolute; left: -5px; top: -6px; width: 10px; height: 10px; border-radius: 50%; background: var(--danger); }
+    .cal-ayuda { font-size: 12px; color: var(--text-muted); text-align: center; margin-bottom: 4px; }
+
+    #meAviso { display: none; background: var(--bg-color); border-radius: 12px; padding: 12px; font-size: 14px; color: var(--text-muted); }
   </style>
 </head>
 <body>
 
-  <div id="toast">Copiado al portapapeles</div>
+  <div id="toast"></div>
 
   <div class="view-container">
-        <div id="view-agenda" class="view">
-      <div class="booking-content">
-        <div class="title" style="margin-bottom:20px;">Citas de hoy</div>
-        <div id="eventosListContainer">
-          <div style="color:var(--text-muted); font-size:14px; text-align:center; padding:20px 0;">Cargando citas...</div>
-        </div>
-      </div>
-    </div>
 
-    <div id="view-calendario" class="view">
-      <div class="booking-content" style="padding-bottom:0;">
-        <div class="segmented-control" id="sedeControl" style="margin-bottom:12px;">
-          <button class="seg-btn" data-sede="miraflores" onclick="cambiarSede('miraflores')">Miraflores</button>
-          <button class="seg-btn" data-sede="surco" onclick="cambiarSede('surco')">Surco</button>
-        </div>
-        <div class="cal-nav">
-          <button class="cal-nav-btn" onclick="moverDia(-1)">‹</button>
-          <div class="cal-fecha-wrap">
-            <span id="calFechaLabel"></span>
-            <input type="date" id="calFechaPicker" onchange="elegirFechaCal(this)">
-          </div>
-          <button class="cal-nav-btn" onclick="moverDia(1)">›</button>
-          <button class="cal-hoy-btn" onclick="irHoy()">Hoy</button>
-        </div>
-      </div>
-      <div id="calGrid" class="cal-grid"></div>
-    </div>
-
+    <!-- ===== RESERVA ===== -->
     <div id="view-booking" class="view active">
       <div class="booking-content">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+        <div class="header-row">
           <div class="title">Booking</div>
-         <div style="display:flex; gap:8px;">
-            <button onclick="activarNotificaciones()" style="background:#E3E3E8; border:none; width:40px; height:40px; border-radius:12px; font-size:16px; cursor:pointer;">🔔</button>
-            <button onclick="abrirModalConfig()" id="btnConfig" style="background:#E3E3E8; border:none; width:40px; height:40px; border-radius:12px; font-size:15px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--text-main);">01</button>
+          <div class="header-actions">
+            <button class="icon-btn" onclick="activarNotificaciones()" aria-label="Notificaciones">🔔</button>
+            <button class="icon-btn" onclick="abrirModalConfig()" id="btnConfig" aria-label="Manicuristas disponibles">01</button>
           </div>
+        </div>
+
+        <div class="segmented-control sede-control" id="sedeReservaControl">
+          <button class="seg-btn" data-sede="miraflores" onclick="cambiarSedeReserva('miraflores')">Miraflores</button>
+          <button class="seg-btn" data-sede="surco" onclick="cambiarSedeReserva('surco')">Surco</button>
         </div>
 
         <div class="segmented-control">
@@ -269,28 +281,20 @@
           </div>
         </div>
 
-        <button class="btn-primary" id="btnCopiar" onclick="copiarHorarios()">
-          Copiar horarios
-        </button>
+        <button class="btn-primary" id="btnCopiar" onclick="copiarHorarios()">Copiar horarios</button>
 
-        <div style="margin-top:20px;">
-          <div id="igSeleccionadoLabel" style="display:none; font-size:12px; color:var(--text-muted); margin-bottom:6px; padding-left:4px;"></div>
-          <div class="client-input-wrapper" style="margin-top:0;">
-            <input type="text" id="nombreClienta" class="client-input" placeholder="Nombre de la clienta">
-            <button class="btn-ig" onclick="abrirModalIG()">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="8" y1="6" x2="21" y2="6"></line>
-                <line x1="8" y1="12" x2="21" y2="12"></line>
-                <line x1="8" y1="18" x2="21" y2="18"></line>
-                <line x1="3" y1="6" x2="3.01" y2="6"></line>
-                <line x1="3" y1="12" x2="3.01" y2="12"></line>
-                <line x1="3" y1="18" x2="3.01" y2="18"></line>
-              </svg>
+        <div class="field">
+          <label class="field-label">Clienta</label>
+          <div id="igSeleccionadoLabel"></div>
+          <div class="input-row">
+            <input type="text" id="nombreClienta" class="client-input" placeholder="Nombre de la clienta" autocomplete="off">
+            <button class="btn-ig" onclick="abrirModalIG()" aria-label="Elegir IG">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
             </button>
           </div>
         </div>
 
-        <div style="margin-top:20px;">
+        <div class="field">
           <label class="field-label">Tiempo de atención</label>
           <select id="duracionSelect" class="duracion-select" onchange="actualizarHorarios()">
             <option value="30">30 min</option>
@@ -301,58 +305,77 @@
             <option value="180">3 horas</option>
             <option value="240">4 horas</option>
           </select>
+          <div id="horariosBotonesContainer"></div>
         </div>
 
-        <div id="horariosBotonesContainer" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:16px;"></div>
-
-        <div style="margin-top:20px;">
+        <div class="field">
           <label class="field-label">Manicurista</label>
           <select id="manicuristaSelect" class="duracion-select">
             <option value="">Cargando...</option>
           </select>
         </div>
 
-        <div class="client-input-wrapper" style="margin-top:20px;">
-          <input type="text" id="servicioInput" class="client-input" placeholder="Servicio" onblur="guardarServicioSiEsNuevo()">
-          <button class="btn-ig" onclick="abrirModalServicio()">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="8" y1="6" x2="21" y2="6"></line>
-              <line x1="8" y1="12" x2="21" y2="12"></line>
-              <line x1="8" y1="18" x2="21" y2="18"></line>
-              <line x1="3" y1="6" x2="3.01" y2="6"></line>
-              <line x1="3" y1="12" x2="3.01" y2="12"></line>
-              <line x1="3" y1="18" x2="3.01" y2="18"></line>
-            </svg>
-          </button>
+        <div class="field">
+          <label class="field-label">Servicio</label>
+          <div class="input-row">
+            <input type="text" id="servicioInput" class="client-input" placeholder="Servicio" autocomplete="off" onblur="guardarServicioSiEsNuevo()">
+            <button class="btn-ig" onclick="abrirModalServicio()" aria-label="Elegir servicio">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            </button>
+          </div>
         </div>
 
-        <button class="btn-secondary" id="btnAgendar" onclick="agendarCita()" style="margin-top:20px;">
-          Agendar cita
-        </button>
-
+        <button class="btn-secondary" id="btnAgendar" onclick="agendarCita()" style="margin-top:24px;">Agendar cita</button>
       </div>
+    </div>
+
+    <!-- ===== CONFIRMAR ===== -->
+    <div id="view-agenda" class="view">
+      <div class="booking-content">
+        <div class="title" style="margin-bottom:16px;">Citas de hoy</div>
+        <div class="segmented-control sede-control" id="sedeAgendaControl">
+          <button class="seg-btn" data-sede="miraflores" onclick="cambiarSedeReserva('miraflores')">Miraflores</button>
+          <button class="seg-btn" data-sede="surco" onclick="cambiarSedeReserva('surco')">Surco</button>
+        </div>
+        <div id="eventosListContainer"><div class="empty-msg">Cargando citas...</div></div>
+      </div>
+    </div>
+
+    <!-- ===== CALENDARIO ===== -->
+    <div id="view-calendario" class="view">
+      <div class="booking-content">
+        <div class="segmented-control sede-control" id="sedeControl" style="margin-bottom:12px;">
+          <button class="seg-btn" data-sede="miraflores" onclick="cambiarSede('miraflores')">Miraflores</button>
+          <button class="seg-btn" data-sede="surco" onclick="cambiarSede('surco')">Surco</button>
+        </div>
+        <div class="cal-nav">
+          <button class="cal-nav-btn" onclick="cambiarDiaAnimado(-1)" aria-label="Día anterior">‹</button>
+          <div class="cal-fecha-wrap">
+            <span id="calFechaLabel"></span>
+            <input type="date" id="calFechaPicker" onchange="elegirFechaCal(this)">
+          </div>
+          <button class="cal-nav-btn" onclick="cambiarDiaAnimado(1)" aria-label="Día siguiente">›</button>
+          <button class="cal-hoy-btn" onclick="irHoy()">Hoy</button>
+        </div>
+        <div class="cal-ayuda">Toca una cita para editarla · Mantén presionado para moverla</div>
+      </div>
+      <div id="calGrid" class="cal-grid"></div>
+    </div>
+
+  </div>
+
+  <!-- ===== MODALES ===== -->
+  <div id="modalIG" class="modal-overlay" onclick="if(event.target===this)cerrarModalIG()">
+    <div class="modal-sheet">
+      <div class="modal-header">Seleccionar IG<button class="close-btn" onclick="cerrarModalIG()">Cerrar</button></div>
+      <div class="ig-list" id="igListContainer"><div class="ig-item muted">Cargando lista...</div></div>
     </div>
   </div>
 
-  <div id="modalIG" class="modal-overlay">
+  <div id="modalConfig" class="modal-overlay" onclick="if(event.target===this)cerrarModalConfig()">
     <div class="modal-sheet">
-      <div class="modal-header">
-        Seleccionar IG
-        <button class="close-btn" onclick="cerrarModalIG()">Cerrar</button>
-      </div>
-      <div class="ig-list" id="igListContainer">
-        <div class="ig-item" style="text-align:center; color: #8E8E93;">Cargando lista...</div>
-      </div>
-    </div>
-  </div>
-
-  <div id="modalConfig" class="modal-overlay">
-    <div class="modal-sheet">
-      <div class="modal-header">
-        Manicuristas disponibles
-        <button class="close-btn" onclick="cerrarModalConfig()">Cerrar</button>
-      </div>
-      <div style="display:flex; gap:10px; padding:20px 16px 30px 16px; flex-wrap:wrap; justify-content:center;">
+      <div class="modal-header"><span id="configTitulo">Manicuristas disponibles</span><button class="close-btn" onclick="cerrarModalConfig()">Cerrar</button></div>
+      <div class="config-grid">
         <button class="config-num-btn" data-num="1" onclick="elegirNumTrabajadores(1)">1</button>
         <button class="config-num-btn" data-num="2" onclick="elegirNumTrabajadores(2)">2</button>
         <button class="config-num-btn" data-num="3" onclick="elegirNumTrabajadores(3)">3</button>
@@ -363,51 +386,36 @@
     </div>
   </div>
 
-  <div id="modalServicio" class="modal-overlay">
+  <div id="modalServicio" class="modal-overlay" onclick="if(event.target===this)cerrarModalServicio()">
     <div class="modal-sheet">
-      <div class="modal-header">
-        Seleccionar servicio
-        <button class="close-btn" onclick="cerrarModalServicio()">Cerrar</button>
-      </div>
-      <div class="ig-list" id="servicioListContainer">
-        <div class="ig-item" style="text-align:center; color: #8E8E93;">Cargando...</div>
-      </div>
+      <div class="modal-header">Seleccionar servicio<button class="close-btn" onclick="cerrarModalServicio()">Cerrar</button></div>
+      <div class="ig-list" id="servicioListContainer"><div class="ig-item muted">Cargando...</div></div>
     </div>
   </div>
 
-  <div id="modalManicuristaEvento" class="modal-overlay">
+  <div id="modalManicuristaEvento" class="modal-overlay" onclick="if(event.target===this)cerrarModalManicuristaEvento()">
     <div class="modal-sheet">
-      <div class="modal-header">
-        Asignar manicurista
-        <button class="close-btn" onclick="cerrarModalManicuristaEvento()">Cerrar</button>
-      </div>
-      <div class="ig-list" id="manicuristaEventoListContainer">
-        <div class="ig-item" style="text-align:center; color:#8E8E93;">Cargando...</div>
-      </div>
+      <div class="modal-header">Asignar manicurista<button class="close-btn" onclick="cerrarModalManicuristaEvento()">Cerrar</button></div>
+      <div class="ig-list" id="manicuristaEventoListContainer"></div>
     </div>
   </div>
 
-    <div id="modalEvento" class="modal-overlay" onclick="if(event.target===this)cerrarModalEvento()">
+  <div id="modalEvento" class="modal-overlay" onclick="if(event.target===this)cerrarModalEvento()">
     <div class="modal-sheet">
-      <div class="modal-header">
-        Cita
-        <button class="close-btn" onclick="cerrarModalEvento()">Cerrar</button>
-      </div>
-      <div style="padding:16px; overflow-y:auto; min-height:0;">
+      <div class="modal-header">Cita<button class="close-btn" onclick="cerrarModalEvento()">Cerrar</button></div>
+      <div class="modal-body">
         <div id="meTitulo" style="font-size:20px; font-weight:700;"></div>
         <div id="meSub" style="color:var(--text-muted); font-size:14px; margin:4px 0 16px;"></div>
-        <div id="meAviso" style="display:none; background:#F2F2F7; border-radius:12px; padding:12px; font-size:14px; color:var(--text-muted);">
-          Evento recurrente o de todo el día: edítalo desde Google Calendar.
-        </div>
+        <div id="meAviso">Evento recurrente o de todo el día: edítalo desde Google Calendar.</div>
         <div id="meEditor">
           <label class="field-label">Fecha</label>
-          <input type="date" id="meFecha" class="client-input" style="width:100%; box-sizing:border-box;">
-          <div style="display:flex; gap:12px; margin-top:12px;">
-            <div style="flex:1;">
+          <input type="date" id="meFecha" class="client-input">
+          <div class="input-row" style="margin-top:12px;">
+            <div style="flex:1; min-width:0;">
               <label class="field-label">Hora</label>
-              <input type="time" id="meHora" step="900" class="client-input" style="width:100%; box-sizing:border-box;">
+              <input type="time" id="meHora" step="900" class="client-input">
             </div>
-            <div style="flex:1;">
+            <div style="flex:1; min-width:0;">
               <label class="field-label">Duración</label>
               <select id="meDuracion" class="duracion-select"></select>
             </div>
@@ -421,50 +429,121 @@
 
   <div class="tab-bar">
     <div class="tab-item active" id="tab-booking" onclick="switchTab('booking')">Reserva</div>
-        <div class="tab-item" id="tab-agenda" onclick="switchTab('agenda')">Confirmar</div>
+    <div class="tab-item" id="tab-agenda" onclick="switchTab('agenda')">Confirmar</div>
     <div class="tab-item" id="tab-calendario" onclick="switchTab('calendario')">Calendario</div>
   </div>
 
   <script>
-    // 🔧 PEGA AQUÍ TU URL DE APPS SCRIPT (la que termina en /exec)
+    // 🔧 URL DE APPS SCRIPT (termina en /exec)
     const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz_vC73zfR0OxRum2qaDWGLDSaFA0YirDO4TvcuA3UsNv69DRS8ZW8A3mS4SSfeFJ7KfQ/exec';
 
+    // ===================== ESTADO =====================
+    const nombresMeses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    const diasSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+
+    let sedeReserva = localStorage.getItem('sedeReserva') || 'miraflores';
+    let numTrabajadores = leerNumTrabajadores();
+    let selectedDateType = 'hoy';
+    let customDate = null;
+    let labelNombre = 'hoy';
+    let duracionMinutos = 90;
+    let horarioSeleccionado = null;
+    let horariosReq = 0;
+    let buscandoHorarios = false;
+
+    let igHandles = [];
+    let igLoaded = false;
+    let igLoading = false;
+    let igSeleccionado = '';
+
+    let serviciosList = [];
+    let serviciosLoading = false;
+    let manicuristasList = [];
+
+    let eventosHoyList = null;
+    let eventosHoyLoading = false;
+
+    let toastTimer = null;
+
+    // ===================== UTILIDADES =====================
     function llamarAPI(action, params) {
       params = params || {};
-      let query = Object.keys(params)
+      const query = Object.keys(params)
         .map(k => encodeURIComponent(k) + '=' + encodeURIComponent(params[k]))
         .join('&');
-      let url = APPS_SCRIPT_URL + '?action=' + encodeURIComponent(action) + (query ? '&' + query : '');
-
-      return fetch(url).then(res => {
+      const url = APPS_SCRIPT_URL + '?action=' + encodeURIComponent(action) + (query ? '&' + query : '');
+      return fetch(url, { cache: 'no-store' }).then(res => {
         if (!res.ok) throw new Error('HTTP ' + res.status);
         return res.json();
       });
     }
 
-    let selectedDateType = 'hoy';
-    let customDate = null;
-    let labelNombre = 'hoy';
-    let igHandles = [];
-    let igLoaded = false;
-    let igLoading = false;
-    let igSeleccionado = '';
-    let numTrabajadores = parseInt(localStorage.getItem('numTrabajadores')) || 1;
-    let duracionMinutos = 90;
-    let buscandoHorarios = false;
-    let horarioSeleccionado = null;
-    let serviciosList = [];
-    let serviciosLoading = false;
-    let manicuristasList = [];
-    let eventosHoyList = null;
-    let eventosHoyLoading = false;
+    function leerNumTrabajadores() {
+      return parseInt(localStorage.getItem('numTrabajadores_' + sedeReserva) || localStorage.getItem('numTrabajadores')) || 1;
+    }
 
-    const nombresMeses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    const nombreSede = s => s === 'surco' ? 'Surco' : 'Miraflores';
+    const vistaActiva = id => document.getElementById('view-' + id).classList.contains('active');
 
+    function fechaKeyLocal(d) {
+      return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+
+    function copiarTexto(texto) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        return navigator.clipboard.writeText(texto).catch(() => copiarFallback(texto));
+      }
+      copiarFallback(texto);
+      return Promise.resolve();
+    }
+    function copiarFallback(texto) {
+      const t = document.createElement('textarea');
+      t.value = texto;
+      t.style.position = 'fixed';
+      t.style.opacity = '0';
+      document.body.appendChild(t);
+      t.select();
+      document.execCommand('copy');
+      document.body.removeChild(t);
+    }
+
+    function mostrarToast(mensaje) {
+      const toast = document.getElementById('toast');
+      if (mensaje) toast.innerText = mensaje;
+      toast.style.top = 'calc(env(safe-area-inset-top) + 12px)';
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => { toast.style.top = '-80px'; }, 2500);
+    }
+
+    function setBtnCargando(btn, cargando, texto) {
+      if (cargando) {
+        btn.dataset.txt = btn.innerText;
+        btn.innerText = texto;
+        btn.disabled = true;
+      } else {
+        btn.innerText = btn.dataset.txt || btn.innerText;
+        btn.disabled = false;
+      }
+    }
+
+    function msgLista(container, texto, clase) {
+      container.innerHTML = '';
+      const d = document.createElement('div');
+      d.className = clase;
+      d.textContent = texto;
+      container.appendChild(d);
+    }
+
+    function ajustarEspacioInferior() {
+      const tabBar = document.querySelector('.tab-bar');
+      const espacio = ((tabBar ? tabBar.offsetHeight : 90) + 24) + 'px';
+      document.querySelectorAll('.view').forEach(v => v.style.paddingBottom = espacio);
+    }
+
+    // ===================== INICIO =====================
     window.onload = function() {
       precargarClientaDesdeURL();
 
-      // Reacciona al toque de la notificación aunque la app ya estuviera abierta
       window.OneSignalDeferred = window.OneSignalDeferred || [];
       window.OneSignalDeferred.push(function(OneSignal) {
         OneSignal.Notifications.addEventListener('click', function(event) {
@@ -474,31 +553,55 @@
         });
       });
 
+      pintarSedeReserva();
+      actualizarBotonConfigLabel();
       cargarClientesIG();
       cargarManicuristas();
       cargarServicios();
       cargarEventosHoy();
-      actualizarBotonConfigLabel();
       actualizarHorarios();
+      activarSwipeCalendario();
       ajustarEspacioInferior();
       window.addEventListener('resize', ajustarEspacioInferior);
+
+      // Al volver a la app: refresca (oculta horarios que ya pasaron)
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState !== 'visible') return;
+        if (!horarioSeleccionado) actualizarHorarios();
+        eventosHoyList = null;
+        if (vistaActiva('agenda')) cargarEventosHoy();
+        if (vistaActiva('calendario')) cargarCalendario();
+      });
+      setInterval(() => {
+        if (document.visibilityState === 'visible' && !horarioSeleccionado) actualizarHorarios();
+      }, 5 * 60 * 1000);
     };
+
+    function switchTab(tab) {
+      ['booking', 'agenda', 'calendario'].forEach(t => {
+        document.getElementById('view-' + t).classList.toggle('active', t === tab);
+        document.getElementById('tab-' + t).classList.toggle('active', t === tab);
+      });
+      document.querySelector('.view-container').scrollTop = 0;
+      if (tab === 'agenda') cargarEventosHoy();
+      if (tab === 'calendario') initCalendario();
+    }
+
+    // ===================== SOLICITUD DESDE NOTIFICACIÓN =====================
+    function setIGSeleccionado(ig) {
+      igSeleccionado = (ig || '').trim().replace(/^@/, '');
+      const label = document.getElementById('igSeleccionadoLabel');
+      label.textContent = igSeleccionado ? '@' + igSeleccionado : '';
+      label.style.display = igSeleccionado ? 'block' : 'none';
+    }
 
     function mostrarSolicitud(ig, nombre) {
       ig = (ig || '').trim().replace(/^@/, '');
       nombre = (nombre || '').trim();
       if (!ig && !nombre) return;
 
-      if (nombre) {
-        document.getElementById('nombreClienta').value = nombre;
-      }
-
-      if (ig) {
-        igSeleccionado = ig;
-        const label = document.getElementById('igSeleccionadoLabel');
-        label.innerText = '@' + ig;
-        label.style.display = 'block';
-      }
+      if (nombre) document.getElementById('nombreClienta').value = nombre;
+      if (ig) setIGSeleccionado(ig);
 
       const anterior = document.getElementById('bannerSolicitud');
       if (anterior) anterior.remove();
@@ -510,18 +613,19 @@
 
       const enlace = document.createElement('a');
       enlace.href = 'https://ig.me/m/' + encodeURIComponent(ig);
-      enlace.style.cssText = 'flex:1; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 8px 14px 16px; color:#fff; text-decoration:none; overflow:hidden;';
+      enlace.style.cssText = 'flex:1; min-width:0; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 8px 14px 16px; color:#fff; text-decoration:none;';
       enlace.innerHTML =
-        '<div style="overflow:hidden;">' +
+        '<div style="min-width:0;">' +
           '<div style="font-size:12px; opacity:0.85;">Quiere agendar</div>' +
-          '<div style="font-size:16px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">@' + ig + '</div>' +
+          '<div class="banner-ig" style="font-size:16px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"></div>' +
         '</div>' +
         '<span style="font-size:14px; font-weight:600; background:rgba(255,255,255,0.22); padding:8px 14px; border-radius:999px; white-space:nowrap;">Abrir DM</span>';
+      enlace.querySelector('.banner-ig').textContent = '@' + ig;
 
       const cerrar = document.createElement('button');
       cerrar.innerText = '✕';
       cerrar.style.cssText = 'background:none; border:none; color:#fff; font-size:18px; padding:14px 16px; cursor:pointer; opacity:0.8;';
-      cerrar.onclick = function() { barra.remove(); };
+      cerrar.onclick = () => barra.remove();
 
       barra.appendChild(enlace);
       barra.appendChild(cerrar);
@@ -530,75 +634,75 @@
 
     function precargarClientaDesdeURL() {
       const params = new URLSearchParams(window.location.search);
-      const ig     = params.get('ig');
+      const ig = params.get('ig');
       const nombre = params.get('nombre');
       if (!ig && !nombre) return;
-
       mostrarSolicitud(ig, nombre);
-
       if (window.history && window.history.replaceState) {
         window.history.replaceState({}, '', window.location.pathname);
       }
     }
 
-    function switchTab(tab) {
-      ['booking', 'agenda', 'calendario'].forEach(t => {
-        document.getElementById('view-' + t).classList.toggle('active', t === tab);
-        document.getElementById('tab-' + t).classList.toggle('active', t === tab);
-      });
-      if (tab === 'agenda') cargarEventosHoy();
-      if (tab === 'calendario') initCalendario();
+    // ===================== SEDE =====================
+    function pintarSedeReserva() {
+      document.querySelectorAll('#sedeReservaControl .seg-btn, #sedeAgendaControl .seg-btn')
+        .forEach(b => b.classList.toggle('active', b.dataset.sede === sedeReserva));
     }
 
-    function selectDateType(type, element) {
-      document.getElementById('btnHoy').classList.remove('active');
-      document.getElementById('btnManana').classList.remove('active');
-      document.getElementById('btnFechaLabel').classList.remove('active');
+    function cambiarSedeReserva(sede) {
+      if (sede === sedeReserva) return;
+      sedeReserva = sede;
+      localStorage.setItem('sedeReserva', sede);
+      numTrabajadores = leerNumTrabajadores();
+      actualizarBotonConfigLabel();
+      pintarSedeReserva();
+      eventosHoyList = null;
+      actualizarHorarios();
+      if (vistaActiva('agenda')) cargarEventosHoy();
+    }
 
+    // ===================== FECHA (RESERVA) =====================
+    function selectDateType(type, element) {
+      ['btnHoy', 'btnManana', 'btnFechaLabel'].forEach(id => document.getElementById(id).classList.remove('active'));
       element.classList.add('active');
       selectedDateType = type;
       labelNombre = type;
-
       document.getElementById('btnFechaLabel').innerText = 'Fecha';
+      document.getElementById('fechaPicker').value = '';
       actualizarHorarios();
     }
 
     function handleDatePick(input) {
-      if (input.value) {
-        selectedDateType = 'fecha';
+      if (!input.value) return;
+      selectedDateType = 'fecha';
+      const p = input.value.split('-');
+      customDate = new Date(p[0], p[1] - 1, p[2]);
 
-        let partes = input.value.split('-');
-        customDate = new Date(partes[0], partes[1] - 1, partes[2]);
+      const dia = ('0' + customDate.getDate()).slice(-2);
+      const mes = nombresMeses[customDate.getMonth()];
+      document.getElementById('btnFechaLabel').innerText = dia + ' ' + mes;
+      labelNombre = 'el ' + dia + ' de ' + mes;
 
-        let dia = ('0' + customDate.getDate()).slice(-2);
-        let mes = nombresMeses[customDate.getMonth()];
-
-        document.getElementById('btnFechaLabel').innerText = dia + ' ' + mes;
-        labelNombre = 'el ' + dia + ' de ' + mes;
-
-        document.getElementById('btnHoy').classList.remove('active');
-        document.getElementById('btnManana').classList.remove('active');
-        document.getElementById('btnFechaLabel').classList.add('active');
-
-        actualizarHorarios();
-      }
+      document.getElementById('btnHoy').classList.remove('active');
+      document.getElementById('btnManana').classList.remove('active');
+      document.getElementById('btnFechaLabel').classList.add('active');
+      actualizarHorarios();
     }
 
     function getTargetDate() {
-      let targetDate = new Date();
-      if (selectedDateType === 'mañana') {
-        targetDate.setDate(targetDate.getDate() + 1);
-      } else if (selectedDateType === 'fecha' && customDate) {
-        targetDate = customDate;
-      }
-      return targetDate;
+      const d = new Date();
+      if (selectedDateType === 'mañana') d.setDate(d.getDate() + 1);
+      else if (selectedDateType === 'fecha' && customDate) return new Date(customDate);
+      return d;
     }
 
+    // ===================== CONFIG MANICURISTAS =====================
     function actualizarBotonConfigLabel() {
       document.getElementById('btnConfig').innerText = String(numTrabajadores).padStart(2, '0');
     }
 
     function abrirModalConfig() {
+      document.getElementById('configTitulo').textContent = 'Manicuristas en ' + nombreSede(sedeReserva);
       document.querySelectorAll('.config-num-btn').forEach(btn => {
         btn.classList.toggle('selected', parseInt(btn.dataset.num) === numTrabajadores);
       });
@@ -611,7 +715,7 @@
 
     function elegirNumTrabajadores(num) {
       numTrabajadores = num;
-      localStorage.setItem('numTrabajadores', num);
+      localStorage.setItem('numTrabajadores_' + sedeReserva, num);
       document.querySelectorAll('.config-num-btn').forEach(btn => {
         btn.classList.toggle('selected', parseInt(btn.dataset.num) === num);
       });
@@ -620,207 +724,128 @@
       actualizarHorarios();
     }
 
-    function cargarClientesIG() {
-      igLoading = true;
-      llamarAPI('clientesIG')
-        .then(function(data) {
-          igHandles = data;
-          igLoaded = true;
-          igLoading = false;
-        })
-        .catch(function(error) {
-          igLoaded = false;
-          igLoading = false;
-          igHandles = [];
-          console.error('Error cargando IGs:', error.message);
-        });
-    }
-
-    function copiarHorarios() {
-      if (buscandoHorarios) return;
-
-      let targetDate = getTargetDate();
-
-      let btn = document.getElementById('btnCopiar');
-      let originalText = btn.innerText;
-      buscandoHorarios = true;
-      btn.innerText = "Buscando...";
-      btn.style.opacity = "0.7";
-      btn.disabled = true;
-
-      llamarAPI('horariosTexto', {
-        fecha: targetDate.toISOString(),
-        tipoDia: labelNombre,
-        numTrabajadores: numTrabajadores,
-        duracion: duracionMinutos
-      })
-        .then(function(textoFinal) {
-          buscandoHorarios = false;
-          btn.innerText = originalText;
-          btn.style.opacity = "1";
-          btn.disabled = false;
-
-          if (typeof textoFinal !== 'string') {
-            let msg = (textoFinal && textoFinal.error) ? textoFinal.error : 'Respuesta inesperada del servidor';
-            alert('Error: ' + msg);
-            return;
-          }
-
-          navigator.clipboard.writeText(textoFinal).then(() => {
-            mostrarToast('Copiado al portapapeles');
-          }).catch(err => {
-            let tempInput = document.createElement("textarea");
-            tempInput.value = textoFinal;
-            document.body.appendChild(tempInput);
-            tempInput.select();
-            document.execCommand("copy");
-            document.body.removeChild(tempInput);
-            mostrarToast('Copiado al portapapeles');
-          });
-        })
-        .catch(function(error) {
-          buscandoHorarios = false;
-          btn.innerText = originalText;
-          btn.style.opacity = "1";
-          btn.disabled = false;
-          alert('Error al calcular horarios: ' + error.message);
-        });
-    }
-
+    // ===================== HORARIOS =====================
     function actualizarHorarios() {
       duracionMinutos = parseInt(document.getElementById('duracionSelect').value, 10);
       horarioSeleccionado = null;
-
-      let targetDate = getTargetDate();
+      const req = ++horariosReq;
       const container = document.getElementById('horariosBotonesContainer');
-      container.innerHTML = '<div style="color:var(--text-muted); font-size:14px;">Cargando horarios...</div>';
+      msgLista(container, 'Cargando horarios...', 'horarios-msg');
 
       llamarAPI('horariosArray', {
-        fecha: targetDate.toISOString(),
+        sede: sedeReserva,
+        fecha: fechaKeyLocal(getTargetDate()),
         numTrabajadores: numTrabajadores,
         duracion: duracionMinutos
       })
-        .then(function(horarios) {
+        .then(horarios => {
+          if (req !== horariosReq) return;
+          if (!Array.isArray(horarios)) return msgLista(container, (horarios && horarios.error) || 'Error al cargar horarios', 'horarios-msg');
+          if (!horarios.length) return msgLista(container, 'No hay espacio disponible', 'horarios-msg');
+
           container.innerHTML = '';
-
-          if (!Array.isArray(horarios)) {
-            let msg = (horarios && horarios.error) ? horarios.error : 'Error al cargar horarios';
-            container.innerHTML = '<div style="color:var(--text-muted); font-size:14px;">' + msg + '</div>';
-            return;
-          }
-
-          if (horarios.length === 0) {
-            container.innerHTML = '<div style="color:var(--text-muted); font-size:14px;">No hay espacio disponible</div>';
-            return;
-          }
-
           horarios.forEach(hora => {
-            let btn = document.createElement('button');
+            const btn = document.createElement('button');
             btn.className = 'horario-btn';
             btn.innerText = hora;
-            btn.onclick = function() {
-              if (horarioSeleccionado === hora) {
-                horarioSeleccionado = null;
-                btn.classList.remove('selected');
-              } else {
-                document.querySelectorAll('.horario-btn').forEach(b => b.classList.remove('selected'));
-                btn.classList.add('selected');
-                horarioSeleccionado = hora;
-              }
+            btn.onclick = () => {
+              const yaSel = horarioSeleccionado === hora;
+              document.querySelectorAll('.horario-btn').forEach(b => b.classList.remove('selected'));
+              horarioSeleccionado = yaSel ? null : hora;
+              if (!yaSel) btn.classList.add('selected');
             };
             container.appendChild(btn);
           });
           ajustarEspacioInferior();
         })
-        .catch(function(error) {
-          container.innerHTML = '<div style="color:var(--text-muted); font-size:14px;">Error: ' + error.message + '</div>';
+        .catch(err => { if (req === horariosReq) msgLista(container, 'Error: ' + err.message, 'horarios-msg'); });
+    }
+
+    function copiarHorarios() {
+      if (buscandoHorarios) return;
+      const btn = document.getElementById('btnCopiar');
+      buscandoHorarios = true;
+      setBtnCargando(btn, true, 'Buscando...');
+
+      llamarAPI('horariosTexto', {
+        sede: sedeReserva,
+        fecha: fechaKeyLocal(getTargetDate()),
+        tipoDia: labelNombre,
+        numTrabajadores: numTrabajadores,
+        duracion: duracionMinutos
+      })
+        .then(texto => {
+          if (typeof texto !== 'string') {
+            alert('Error: ' + ((texto && texto.error) || 'Respuesta inesperada del servidor'));
+            return;
+          }
+          return copiarTexto(texto).then(() => mostrarToast('Copiado al portapapeles'));
+        })
+        .catch(err => alert('Error al calcular horarios: ' + err.message))
+        .finally(() => {
+          buscandoHorarios = false;
+          setBtnCargando(btn, false);
         });
     }
 
+    // ===================== MANICURISTAS Y SERVICIOS =====================
     function cargarManicuristas() {
       const select = document.getElementById('manicuristaSelect');
-      select.innerHTML = '<option value="">Cargando...</option>';
-
       llamarAPI('manicuristas')
-        .then(function(data) {
+        .then(data => {
           manicuristasList = Array.isArray(data) ? data : [];
           select.innerHTML = '';
-          if (manicuristasList.length === 0) {
+          if (!manicuristasList.length) {
             select.innerHTML = '<option value="">No hay manicuristas registradas</option>';
             return;
           }
           manicuristasList.forEach(nombre => {
-            let opt = document.createElement('option');
+            const opt = document.createElement('option');
             opt.value = nombre;
-            opt.innerText = nombre;
+            opt.textContent = nombre;
             select.appendChild(opt);
           });
         })
-        .catch(function(error) {
-          select.innerHTML = '<option value="">Error al cargar</option>';
-          console.error('Error cargando manicuristas:', error.message);
-        });
+        .catch(() => { select.innerHTML = '<option value="">Error al cargar</option>'; });
     }
 
-    function cargarServicios() {
+    function cargarServicios(callback) {
+      if (serviciosLoading) return;
       serviciosLoading = true;
       llamarAPI('servicios')
-        .then(function(data) {
-          serviciosLoading = false;
-          serviciosList = Array.isArray(data) ? data : [];
+        .then(data => {
+          serviciosList = Array.isArray(data) ? data : serviciosList;
+          if (callback) callback();
         })
-        .catch(function(error) {
-          serviciosLoading = false;
-          console.error('Error cargando servicios:', error.message);
-        });
+        .catch(err => {
+          if (callback && !serviciosList.length) {
+            msgLista(document.getElementById('servicioListContainer'), 'Error: ' + err.message, 'ig-item muted');
+          }
+        })
+        .finally(() => { serviciosLoading = false; });
     }
 
     function abrirModalServicio() {
-      const modal = document.getElementById('modalServicio');
-      const container = document.getElementById('servicioListContainer');
-      modal.classList.add('active');
-
-      if (serviciosList.length > 0) {
-        pintarListaServicio();
-      } else {
-        container.innerHTML = '<div class="ig-item" style="text-align:center; color:#8E8E93;">Cargando...</div>';
-      }
-
-      if (serviciosLoading) return;
-
-      serviciosLoading = true;
-      llamarAPI('servicios')
-        .then(function(data) {
-          serviciosLoading = false;
-          serviciosList = Array.isArray(data) ? data : [];
-          pintarListaServicio();
-        })
-        .catch(function(error) {
-          serviciosLoading = false;
-          if (serviciosList.length === 0) {
-            container.innerHTML = '<div class="ig-item" style="text-align:center;">Error: ' + error.message + '</div>';
-          }
-        });
+      document.getElementById('modalServicio').classList.add('active');
+      if (serviciosList.length) pintarListaServicio();
+      else msgLista(document.getElementById('servicioListContainer'), 'Cargando...', 'ig-item muted');
+      cargarServicios(pintarListaServicio);
     }
 
     function pintarListaServicio() {
       const container = document.getElementById('servicioListContainer');
+      if (!serviciosList.length) return msgLista(container, 'No hay servicios guardados aún', 'ig-item muted');
       container.innerHTML = '';
-
-      if (serviciosList.length > 0) {
-        serviciosList.forEach(servicio => {
-          let div = document.createElement('div');
-          div.className = 'ig-item';
-          div.innerText = servicio;
-          div.onclick = function() {
-            document.getElementById('servicioInput').value = servicio;
-            cerrarModalServicio();
-          };
-          container.appendChild(div);
-        });
-      } else {
-        container.innerHTML = '<div class="ig-item" style="text-align:center;">No hay servicios guardados aún</div>';
-      }
+      serviciosList.forEach(servicio => {
+        const div = document.createElement('div');
+        div.className = 'ig-item';
+        div.textContent = servicio;
+        div.onclick = () => {
+          document.getElementById('servicioInput').value = servicio;
+          cerrarModalServicio();
+        };
+        container.appendChild(div);
+      });
     }
 
     function cerrarModalServicio() {
@@ -828,200 +853,188 @@
     }
 
     function guardarServicioSiEsNuevo() {
-      const input = document.getElementById('servicioInput');
-      const valor = input.value.trim();
-      if (valor === '') return;
-
-      const yaExiste = serviciosList.some(s => s.toLowerCase() === valor.toLowerCase());
-      if (yaExiste) return;
+      const valor = document.getElementById('servicioInput').value.trim();
+      if (!valor) return;
+      if (serviciosList.some(s => s.toLowerCase() === valor.toLowerCase())) return;
 
       llamarAPI('guardarServicio', { servicio: valor })
-        .then(function(resultado) {
-          if (resultado && resultado.ok && !resultado.existente) {
+        .then(r => {
+          if (r && r.ok && !r.existente) {
             serviciosList.push(valor);
             mostrarToast('Servicio guardado');
           }
         })
-        .catch(function(error) {
-          console.error('Error guardando servicio:', error.message);
-        });
+        .catch(() => {});
     }
 
-    function agendarCita() {
-      if (!horarioSeleccionado) {
-        alert('Selecciona un horario disponible primero.');
-        return;
-      }
-      const clienteNombre = document.getElementById('nombreClienta').value.trim();
-      if (clienteNombre === '') {
-        alert('Escribe o selecciona el nombre/IG de la clienta.');
-        return;
-      }
-      const manicurista = document.getElementById('manicuristaSelect').value;
-      if (!manicurista) {
-        alert('Selecciona una manicurista.');
-        return;
-      }
-      const servicio = document.getElementById('servicioInput').value.trim();
-      if (servicio === '') {
-        alert('Escribe o selecciona el servicio.');
-        return;
-      }
+    // ===================== IG =====================
+    function cargarClientesIG(callback) {
+      if (igLoading) return;
+      igLoading = true;
+      llamarAPI('clientesIG')
+        .then(data => {
+          igHandles = Array.isArray(data) ? data : [];
+          igLoaded = true;
+          if (callback) callback();
+        })
+        .catch(err => {
+          if (callback && !igLoaded) msgLista(document.getElementById('igListContainer'), 'Error: ' + err.message, 'ig-item muted');
+        })
+        .finally(() => { igLoading = false; });
+    }
 
-      let targetDate = getTargetDate();
-      let btn = document.getElementById('btnAgendar');
-      let originalText = btn.innerText;
-      btn.innerText = 'Agendando...';
-      btn.disabled = true;
-      btn.style.opacity = '0.7';
+    function abrirModalIG() {
+      document.getElementById('modalIG').classList.add('active');
+      if (igLoaded) pintarListaIG();
+      else msgLista(document.getElementById('igListContainer'), 'Cargando lista...', 'ig-item muted');
+      cargarClientesIG(pintarListaIG);
+    }
+
+    function pintarListaIG() {
+      const container = document.getElementById('igListContainer');
+      if (!igHandles.length) return msgLista(container, 'No hay clientas agendadas para hoy', 'ig-item muted');
+      container.innerHTML = '';
+      igHandles.forEach(ig => {
+        const div = document.createElement('div');
+        div.className = 'ig-item';
+        div.textContent = ig;
+        div.onclick = () => {
+          setIGSeleccionado(ig);
+          cerrarModalIG();
+        };
+        container.appendChild(div);
+      });
+    }
+
+    function cerrarModalIG() {
+      document.getElementById('modalIG').classList.remove('active');
+    }
+
+    // ===================== AGENDAR =====================
+    function agendarCita() {
+      if (!horarioSeleccionado) return alert('Selecciona un horario disponible primero.');
+      const cliente = document.getElementById('nombreClienta').value.trim();
+      if (!cliente) return alert('Escribe o selecciona el nombre/IG de la clienta.');
+      const manicurista = document.getElementById('manicuristaSelect').value;
+      if (!manicurista) return alert('Selecciona una manicurista.');
+      const servicio = document.getElementById('servicioInput').value.trim();
+      if (!servicio) return alert('Escribe o selecciona el servicio.');
+
+      const btn = document.getElementById('btnAgendar');
+      setBtnCargando(btn, true, 'Agendando en ' + nombreSede(sedeReserva) + '...');
 
       llamarAPI('crearCita', {
-        fecha: targetDate.toISOString(),
+        sede: sedeReserva,
+        fecha: fechaKeyLocal(getTargetDate()),
         hora: horarioSeleccionado,
         duracion: duracionMinutos,
+        numTrabajadores: numTrabajadores,
         manicurista: manicurista,
-        cliente: clienteNombre,
+        cliente: cliente,
         servicio: servicio,
         ig: igSeleccionado
       })
-        .then(function(resultado) {
-          btn.innerText = originalText;
-          btn.disabled = false;
-          btn.style.opacity = '1';
-
-          if (!resultado || !resultado.ok) {
-            alert('Error al agendar: ' + (resultado && resultado.error ? resultado.error : 'desconocido'));
+        .then(r => {
+          if (!r || !r.ok) {
+            alert('Error al agendar: ' + ((r && r.error) || 'desconocido'));
+            actualizarHorarios();
             return;
           }
+          mostrarToast('Cita agendada en ' + nombreSede(sedeReserva) + ' ✓');
 
-          mostrarToast('Cita agendada ✓');
-
-          horarioSeleccionado = null;
           document.getElementById('nombreClienta').value = '';
           document.getElementById('servicioInput').value = '';
-          igSeleccionado = '';
-          document.getElementById('igSeleccionadoLabel').style.display = 'none';
+          setIGSeleccionado('');
+          const banner = document.getElementById('bannerSolicitud');
+          if (banner) banner.remove();
           eventosHoyList = null;
-
+          if (!serviciosList.some(s => s.toLowerCase() === servicio.toLowerCase())) serviciosList.push(servicio);
           actualizarHorarios();
         })
-        .catch(function(error) {
-          btn.innerText = originalText;
-          btn.disabled = false;
-          btn.style.opacity = '1';
-          alert('Error al agendar: ' + error.message);
+        .catch(err => alert('Error al agendar: ' + err.message))
+        .finally(() => setBtnCargando(btn, false));
+    }
+
+    // ===================== CONFIRMAR (CITAS DE HOY) =====================
+    function cargarEventosHoy() {
+      const container = document.getElementById('eventosListContainer');
+
+      if (eventosHoyList !== null) pintarEventosHoy(eventosHoyList);
+      else msgLista(container, 'Cargando citas...', 'empty-msg');
+
+      if (eventosHoyLoading) return;
+      eventosHoyLoading = true;
+      const sedePedida = sedeReserva;
+
+      llamarAPI('eventosHoy', { sede: sedePedida })
+        .then(eventos => {
+          eventosHoyLoading = false;
+          if (sedePedida !== sedeReserva) return cargarEventosHoy();
+          if (!Array.isArray(eventos)) {
+            if (eventosHoyList === null) msgLista(container, (eventos && eventos.error) || 'Error al cargar citas', 'empty-msg');
+            return;
+          }
+          eventosHoyList = eventos;
+          if (vistaActiva('agenda')) pintarEventosHoy(eventosHoyList);
+        })
+        .catch(err => {
+          eventosHoyLoading = false;
+          if (eventosHoyList === null) msgLista(container, 'Error: ' + err.message, 'empty-msg');
         });
     }
 
     function pintarEventosHoy(eventos) {
       const container = document.getElementById('eventosListContainer');
+      if (!eventos.length) return msgLista(container, 'No hay citas para hoy en ' + nombreSede(sedeReserva), 'empty-msg');
       container.innerHTML = '';
 
-      if (eventos.length === 0) {
-        container.innerHTML = '<div style="color:var(--text-muted); font-size:14px; text-align:center; padding:20px 0;">No hay citas para hoy</div>';
-        return;
-      }
-
       eventos.forEach(ev => {
-        let row = document.createElement('div');
+        const row = document.createElement('div');
         row.className = 'evento-item';
 
-        let infoDiv = document.createElement('div');
-        infoDiv.style.flex = '1';
-        infoDiv.style.overflow = 'hidden';
+        const info = document.createElement('div');
+        info.className = 'evento-info';
+        const nombre = document.createElement('div');
+        nombre.className = 'evento-nombre';
+        nombre.textContent = ev.clienteNombre;
+        const hora = document.createElement('div');
+        hora.className = 'evento-hora';
+        hora.textContent = ev.horaTexto + (ev.servicio ? ' · ' + ev.servicio : '');
+        info.appendChild(nombre);
+        info.appendChild(hora);
 
-        let nombreDiv = document.createElement('div');
-        nombreDiv.className = 'evento-nombre';
-        nombreDiv.innerText = ev.clienteNombre;
+        const btnMan = document.createElement('button');
+        btnMan.className = 'btn-square';
+        btnMan.textContent = (ev.manicuristaAbrev || '').trim() || '···';
+        btnMan.onclick = () => abrirModalManicuristaEvento(ev.id, btnMan);
 
-        let horaDiv = document.createElement('div');
-        horaDiv.className = 'evento-hora';
-        horaDiv.innerText = ev.horaTexto + (ev.servicio ? ' · ' + ev.servicio : '');
+        const btnOk = document.createElement('button');
+        btnOk.className = 'btn-square';
+        btnOk.textContent = '✓';
+        btnOk.onclick = () => confirmarCitaEvento(ev);
 
-        infoDiv.appendChild(nombreDiv);
-        infoDiv.appendChild(horaDiv);
-
-        let btnManicurista = document.createElement('button');
-        btnManicurista.className = 'btn-square';
-        btnManicurista.innerText = (ev.manicuristaAbrev && ev.manicuristaAbrev.trim() !== '') ? ev.manicuristaAbrev.trim() : '···';
-        btnManicurista.onclick = function() {
-          abrirModalManicuristaEvento(ev.id, btnManicurista);
-        };
-
-        let btnConfirmar = document.createElement('button');
-        btnConfirmar.className = 'btn-square';
-        btnConfirmar.innerText = '✓';
-        btnConfirmar.onclick = function() {
-          confirmarCitaEvento(ev);
-        };
-
-        row.appendChild(infoDiv);
-        row.appendChild(btnManicurista);
-        row.appendChild(btnConfirmar);
+        row.appendChild(info);
+        row.appendChild(btnMan);
+        row.appendChild(btnOk);
         container.appendChild(row);
       });
-
       ajustarEspacioInferior();
     }
 
-    function cargarEventosHoy() {
-      const container = document.getElementById('eventosListContainer');
-
-      if (eventosHoyList !== null) {
-        pintarEventosHoy(eventosHoyList);
-      } else if (container) {
-        container.innerHTML = '<div style="color:var(--text-muted); font-size:14px; text-align:center; padding:20px 0;">Cargando citas...</div>';
-      }
-
-      if (eventosHoyLoading) return;
-
-      eventosHoyLoading = true;
-      llamarAPI('eventosHoy')
-        .then(function(eventos) {
-          eventosHoyLoading = false;
-
-          if (!Array.isArray(eventos)) {
-            if (eventosHoyList === null && container) {
-              let msg = (eventos && eventos.error) ? eventos.error : 'Error al cargar citas';
-              container.innerHTML = '<div style="color:var(--text-muted); font-size:14px; text-align:center; padding:20px 0;">' + msg + '</div>';
-            }
-            return;
-          }
-
-          eventosHoyList = eventos;
-          if (document.getElementById('view-agenda').classList.contains('active')) {
-            pintarEventosHoy(eventosHoyList);
-          }
-        })
-        .catch(function(error) {
-          eventosHoyLoading = false;
-          if (eventosHoyList === null && container) {
-            container.innerHTML = '<div style="color:var(--text-muted); font-size:14px; text-align:center; padding:20px 0;">Error: ' + error.message + '</div>';
-          }
-        });
-    }
-
-    let eventoManicuristaActualId = null;
-
     function abrirModalManicuristaEvento(eventId, btnRef) {
-      eventoManicuristaActualId = eventId;
       const container = document.getElementById('manicuristaEventoListContainer');
-      container.innerHTML = '';
-
-      if (manicuristasList.length === 0) {
-        container.innerHTML = '<div class="ig-item" style="text-align:center;">No hay manicuristas registradas</div>';
+      if (!manicuristasList.length) {
+        msgLista(container, 'No hay manicuristas registradas', 'ig-item muted');
       } else {
+        container.innerHTML = '';
         manicuristasList.forEach(nombre => {
-          let div = document.createElement('div');
+          const div = document.createElement('div');
           div.className = 'ig-item';
-          div.innerText = nombre;
-          div.onclick = function() {
-            asignarManicuristaAEvento(eventId, nombre, btnRef);
-          };
+          div.textContent = nombre;
+          div.onclick = () => asignarManicuristaAEvento(eventId, nombre, btnRef);
           container.appendChild(div);
         });
       }
-
       document.getElementById('modalManicuristaEvento').classList.add('active');
     }
 
@@ -1030,143 +1043,45 @@
     }
 
     function asignarManicuristaAEvento(eventId, nombre, btnRef) {
-      llamarAPI('asignarManicurista', { eventId: eventId, manicurista: nombre })
-        .then(function(resultado) {
-          cerrarModalManicuristaEvento();
-          if (resultado && resultado.ok) {
-            btnRef.innerText = resultado.abrev.trim() !== '' ? resultado.abrev.trim() : '···';
-            mostrarToast('Manicurista asignada');
-            eventosHoyList = null;
-          } else {
-            alert('Error: ' + (resultado && resultado.error ? resultado.error : 'desconocido'));
-          }
+      cerrarModalManicuristaEvento();
+      llamarAPI('asignarManicurista', { sede: sedeReserva, eventId: eventId, manicurista: nombre })
+        .then(r => {
+          if (!r || !r.ok) return alert('Error: ' + ((r && r.error) || 'desconocido'));
+          btnRef.textContent = (r.abrev || '').trim() || '···';
+          mostrarToast('Manicurista asignada');
+          eventosHoyList = null;
         })
-        .catch(function(error) {
-          cerrarModalManicuristaEvento();
-          alert('Error: ' + error.message);
-        });
+        .catch(err => alert('Error: ' + err.message));
     }
 
     function confirmarCitaEvento(ev) {
       const mensaje = 'Preciosa, confirmamos tu cita a las ' + ev.horaTexto + ', te esperamos 💕';
-
-      function copiarMensaje(mostrarComoPegar) {
-        navigator.clipboard.writeText(mensaje).then(() => {
-          mostrarToast(mostrarComoPegar ? 'Mensaje copiado, pégalo en el chat' : 'Mensaje copiado al portapapeles');
-        }).catch(() => {
-          let tempInput = document.createElement("textarea");
-          tempInput.value = mensaje;
-          document.body.appendChild(tempInput);
-          tempInput.select();
-          document.execCommand("copy");
-          document.body.removeChild(tempInput);
-          mostrarToast('Mensaje copiado al portapapeles');
-        });
-      }
-
-      if (ev.ig && ev.ig.trim() !== '') {
-        let usuario = ev.ig.trim().replace(/^@/, '');
-        copiarMensaje(true);
-        window.open('https://ig.me/m/' + usuario, '_blank');
-      } else {
-        copiarMensaje(false);
-      }
+      const usuario = (ev.ig || '').trim().replace(/^@/, '');
+      copiarTexto(mensaje).then(() => {
+        mostrarToast(usuario ? 'Mensaje copiado, pégalo en el chat' : 'Mensaje copiado al portapapeles');
+      });
+      if (usuario) window.open('https://ig.me/m/' + encodeURIComponent(usuario), '_blank');
     }
 
-    function mostrarToast(mensaje) {
-      let toast = document.getElementById('toast');
-      if (mensaje) toast.innerText = mensaje;
-      toast.style.top = "20px";
-      setTimeout(() => { toast.style.top = "-50px"; }, 2500);
-    }
-
-    function abrirModalIG() {
-      const modal = document.getElementById('modalIG');
-      const container = document.getElementById('igListContainer');
-
-      modal.classList.add('active');
-
-      if (igLoaded && igHandles.length > 0) {
-        pintarListaIG();
-      } else {
-        container.innerHTML = '<div class="ig-item" style="text-align:center; color: #8E8E93;">Cargando lista...</div>';
-      }
-
-      if (igLoading) return;
-
-      igLoading = true;
-      llamarAPI('clientesIG')
-        .then(function(data) {
-          igLoading = false;
-          igHandles = data;
-          igLoaded = true;
-          pintarListaIG();
-        })
-        .catch(function(error) {
-          igLoading = false;
-          if (!igLoaded) {
-            container.innerHTML = '<div class="ig-item" style="text-align:center;">Error: ' + error.message + '</div>';
-          }
-        });
-    }
-
-    function pintarListaIG() {
-      const container = document.getElementById('igListContainer');
-      container.innerHTML = '';
-
-      if (igHandles.length > 0) {
-        igHandles.forEach(ig => {
-          let div = document.createElement('div');
-          div.className = 'ig-item';
-          div.innerText = ig;
-          div.onclick = function() {
-            igSeleccionado = ig;
-            const label = document.getElementById('igSeleccionadoLabel');
-            label.innerText = ig;
-            label.style.display = 'block';
-            cerrarModalIG();
-          };
-          container.appendChild(div);
-        });
-      } else {
-        container.innerHTML = '<div class="ig-item" style="text-align:center;">No hay clientas agendadas para hoy</div>';
-      }
-    }
-
-    function cerrarModalIG() {
-      document.getElementById('modalIG').classList.remove('active');
-    }
-
-    function ajustarEspacioInferior() {
-      const tabBar = document.querySelector('.tab-bar');
-      const espacio = ((tabBar ? tabBar.offsetHeight : 90) + 24) + 'px';
-      document.querySelectorAll('.view').forEach(v => v.style.paddingBottom = espacio);
-    }
+    // ===================== NOTIFICACIONES =====================
     function activarNotificaciones() {
       window.OneSignalDeferred = window.OneSignalDeferred || [];
       OneSignalDeferred.push(async function(OneSignal) {
         const permiso = await OneSignal.Notifications.requestPermission();
-        if (permiso) {
-          mostrarToast('Notificaciones activadas ✓');
-        } else {
-          mostrarToast('Permiso no concedido');
-        }
+        mostrarToast(permiso ? 'Notificaciones activadas ✓' : 'Permiso no concedido');
       });
     }
 
-      // ===== CALENDARIO =====
+    // ===================== CALENDARIO =====================
     const CAL_HORA_INI = 9, CAL_HORA_FIN = 22, CAL_PX_HORA = 64, CAL_SNAP = 15;
     const CAL_COLORES = ['#007AFF', '#34C759', '#FF9500', '#AF52DE', '#FF2D55', '#5AC8FA', '#A2845E'];
-    const diasSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
     let calSede = localStorage.getItem('calSede') || 'miraflores';
     let calFecha = new Date(); calFecha.setHours(0, 0, 0, 0);
     let calEventos = [];
     let calReq = 0;
     let calEventoActual = null;
+    let calArrastrando = false;
 
-    function fechaKeyLocal(d) {
-      return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-    }
     function formatHora12(d) {
       let h = d.getHours(), m = d.getMinutes(), ap = h >= 12 ? 'pm' : 'am';
       h = h % 12 || 12;
@@ -1197,6 +1112,38 @@
       cargarCalendario();
     }
 
+    function cambiarDiaAnimado(n) {
+      const grid = document.getElementById('calGrid');
+      grid.classList.remove('slide-izq', 'slide-der');
+      void grid.offsetWidth;
+      grid.classList.add(n > 0 ? 'slide-izq' : 'slide-der');
+      moverDia(n);
+    }
+
+    // Deslizar: derecha = día anterior · izquierda = día siguiente
+    function activarSwipeCalendario() {
+      const grid = document.getElementById('calGrid');
+      let x0 = 0, y0 = 0, t0 = 0, activo = false;
+
+      grid.addEventListener('touchstart', e => {
+        activo = e.touches.length === 1;
+        if (!activo) return;
+        x0 = e.touches[0].clientX;
+        y0 = e.touches[0].clientY;
+        t0 = Date.now();
+      }, { passive: true });
+
+      grid.addEventListener('touchend', e => {
+        if (!activo || calArrastrando) return;
+        activo = false;
+        const t = e.changedTouches[0];
+        const dx = t.clientX - x0, dy = t.clientY - y0;
+        if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5 && Date.now() - t0 < 800) {
+          cambiarDiaAnimado(dx < 0 ? 1 : -1);
+        }
+      });
+    }
+
     function actualizarLabelCal() {
       const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
       const diff = Math.round((calFecha - hoy) / 86400000);
@@ -1220,7 +1167,7 @@
         .then(data => {
           if (req !== calReq) return;
           grid.style.opacity = '1';
-          if (!Array.isArray(data)) { mostrarToast('Error: ' + ((data && data.error) || 'desconocido')); return; }
+          if (!Array.isArray(data)) return mostrarToast('Error: ' + ((data && data.error) || 'desconocido'));
           calEventos = data;
           pintarCalendario();
         })
@@ -1328,6 +1275,7 @@
         if (ev.recurrente) return;
         timer = setTimeout(() => {
           activo = true;
+          calArrastrando = true;
           div.classList.add('arrastrando');
           if (navigator.vibrate) navigator.vibrate(15);
         }, 350);
@@ -1346,6 +1294,7 @@
         clearTimeout(timer);
         if (activo) {
           activo = false;
+          setTimeout(() => { calArrastrando = false; }, 0);
           div.classList.remove('arrastrando');
           if (deltaMin !== 0) guardarMovimiento(ev, ev.inicio + deltaMin * 60000, ev.fin + deltaMin * 60000);
           return;
@@ -1358,7 +1307,7 @@
       div.addEventListener('touchend', e => { e.preventDefault(); fin(); });
       div.addEventListener('touchcancel', () => {
         clearTimeout(timer);
-        if (activo) { activo = false; pintarCalendario(); }
+        if (activo) { activo = false; calArrastrando = false; pintarCalendario(); }
       });
       div.addEventListener('mousedown', e => {
         inicio(e.clientY, e.clientX);
@@ -1373,6 +1322,11 @@
       });
     }
 
+    function tocarDatosReserva(sede) {
+      eventosHoyList = null;
+      if (sede === sedeReserva) actualizarHorarios();
+    }
+
     function guardarMovimiento(ev, nuevoIni, nuevoFin) {
       const prevIni = ev.inicio, prevFin = ev.fin;
       ev.inicio = nuevoIni;
@@ -1382,12 +1336,12 @@
       }
       pintarCalendario();
 
-      llamarAPI('moverEvento', { sede: calSede, eventId: ev.id, inicio: nuevoIni, fin: nuevoFin })
+      const sede = calSede;
+      llamarAPI('moverEvento', { sede: sede, eventId: ev.id, inicio: nuevoIni, fin: nuevoFin })
         .then(r => {
           if (!r || !r.ok) throw new Error((r && r.error) || 'desconocido');
           mostrarToast('Cita actualizada ✓');
-          eventosHoyList = null;
-          if (calSede === 'miraflores') actualizarHorarios();
+          tocarDatosReserva(sede);
         })
         .catch(err => {
           ev.inicio = prevIni;
@@ -1442,7 +1396,7 @@
       if (!ev) return;
       const f = document.getElementById('meFecha').value;
       const h = document.getElementById('meHora').value;
-      if (!f || !h) { alert('Completa fecha y hora'); return; }
+      if (!f || !h) return alert('Completa fecha y hora');
 
       const [y, mo, d] = f.split('-').map(Number);
       const [hh, mm] = h.split(':').map(Number);
@@ -1461,20 +1415,18 @@
       calEventos = calEventos.filter(e => e !== ev);
       pintarCalendario();
 
-      llamarAPI('borrarEvento', { sede: calSede, eventId: ev.id })
+      const sede = calSede;
+      llamarAPI('borrarEvento', { sede: sede, eventId: ev.id })
         .then(r => {
           if (!r || !r.ok) throw new Error((r && r.error) || 'desconocido');
           mostrarToast('Cita eliminada');
-          eventosHoyList = null;
-          if (calSede === 'miraflores') actualizarHorarios();
+          tocarDatosReserva(sede);
         })
         .catch(err => {
           alert('No se pudo eliminar: ' + err.message);
           cargarCalendario();
         });
     }
-
-    
   </script>
 </body>
 </html>
