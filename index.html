@@ -558,7 +558,8 @@
     // ===================== CACHÉ DE DÍAS (una sola fuente para todo) =====================
     // Muestra al instante lo guardado y actualiza en segundo plano.
     const DIA_FRESCO_MS = 30000;
-    const diaCache = new Map();
+        const diaCache = new Map();
+    const citasPendientes = []; // citas que se están guardando en segundo plano
     let diaSeq = 0;
 
     const claveDia = (sede, fecha) => sede + '_' + fecha;
@@ -583,7 +584,7 @@
         if (!Array.isArray(data)) throw new Error((data && data.error) || 'Respuesta inválida');
         const cur = diaCache.get(k) || {};
         if (!cur.data || seq > (cur.seq || 0)) {
-          cur.data = data;
+                    cur.data = data.concat(citasPendientes.filter(p => p.k === k).map(p => p.ev));
           cur.t = Date.now();
           cur.seq = seq;
         }
@@ -1036,7 +1037,7 @@
     }
 
     // ===================== AGENDAR =====================
-    function agendarCita() {
+        function agendarCita() {
       if (!horarioSeleccionado) return alert('Selecciona un horario disponible primero.');
       const cliente = document.getElementById('nombreClienta').value.trim();
       if (!cliente) return alert('Escribe o selecciona el nombre/IG de la clienta.');
@@ -1046,52 +1047,71 @@
       if (!servicio) return alert('Escribe o selecciona el servicio.');
 
       const sede = sedeReserva;
-      const fecha = fechaKeyLocal(getTargetDate());
+      const dia = getTargetDate();
+      const fecha = fechaKeyLocal(dia);
+      const hora = horarioSeleccionado;
       const ig = igSeleccionado;
-      const btn = document.getElementById('btnAgendar');
-      setBtnCargando(btn, true, 'Agendando en ' + nombreSede(sede) + '...');
+      const duracion = duracionMinutos;
 
+      // Hora de inicio para mostrar la cita al instante
+      const m = hora.match(/(\d{1,2}):(\d{2})\s*(am|pm)/i);
+      let hh = +m[1];
+      const mm = +m[2], ap = m[3].toLowerCase();
+      if (ap === 'pm' && hh !== 12) hh += 12;
+      if (ap === 'am' && hh === 12) hh = 0;
+      const inicio = new Date(dia.getFullYear(), dia.getMonth(), dia.getDate(), hh, mm).getTime();
+
+      const temp = {
+        id: 'tmp_' + inicio + '_' + Math.random().toString(36).slice(2, 7),
+        titulo: cliente + ' - ' + servicio,
+        manicurista: manicurista.toLowerCase() === 'cualquiera' ? '' : manicurista.substring(0, 3),
+        cliente: cliente, servicio: servicio,
+        inicio: inicio, fin: inicio + duracion * 60000,
+        todoElDia: false, recurrente: false, ig: ig, pendiente: true
+      };
+      const pend = { k: claveDia(sede, fecha), ev: temp };
+      citasPendientes.push(pend);
+      const cache = diaCacheado(sede, fecha);
+      if (cache) cache.push(temp);
+
+      const quitarDePendientes = () => {
+        const i = citasPendientes.indexOf(pend);
+        if (i >= 0) citasPendientes.splice(i, 1);
+      };
+
+      // Libera el formulario al instante
+      mostrarToast('Agendando en ' + nombreSede(sede) + '...');
+      document.getElementById('nombreClienta').value = '';
+      document.getElementById('servicioInput').value = '';
+      setIGSeleccionado('');
+      const banner = document.getElementById('bannerSolicitud');
+      if (banner) banner.remove();
+      agregarServicioLocal(servicio);
+      horarioSeleccionado = null;
+      actualizarHorarios();
+
+      // Guarda en segundo plano
       llamarAPI('crearCita', {
-        sede: sede,
-        fecha: fecha,
-        hora: horarioSeleccionado,
-        duracion: duracionMinutos,
-        numTrabajadores: numTrabajadores,
-        manicurista: manicurista,
-        cliente: cliente,
-        servicio: servicio,
-        ig: ig
+        sede: sede, fecha: fecha, hora: hora, duracion: duracion,
+        numTrabajadores: numTrabajadores, manicurista: manicurista,
+        cliente: cliente, servicio: servicio, ig: ig
       })
         .then(r => {
-          if (!r || !r.ok) {
-            alert('Error al agendar: ' + ((r && r.error) || 'desconocido'));
-            refrescarTrasCambio(sede, [fecha]);
-            return;
-          }
-
-          // Actualiza al instante la caché local con la nueva cita
-          const d = diaCacheado(sede, fecha);
-          if (d && r.inicio) {
-            d.push({
-              id: r.id, titulo: r.titulo, manicurista: (r.abrev || '').trim(),
-              cliente: cliente, servicio: servicio, inicio: r.inicio, fin: r.fin,
-              todoElDia: false, recurrente: false, ig: ig
-            });
-          }
-
-          mostrarToast('Cita agendada en ' + nombreSede(sede) + ' ✓');
-          document.getElementById('nombreClienta').value = '';
-          document.getElementById('servicioInput').value = '';
-          setIGSeleccionado('');
-          const banner = document.getElementById('bannerSolicitud');
-          if (banner) banner.remove();
-          agregarServicioLocal(servicio);
-          horarioSeleccionado = null;
-          actualizarHorarios();
-          refrescarTrasCambio(sede, [fecha]);
+          if (!r || !r.ok) throw new Error((r && r.error) || 'desconocido');
+          Object.assign(temp, {
+            id: r.id, titulo: r.titulo, manicurista: (r.abrev || '').trim(),
+            inicio: r.inicio, fin: r.fin, pendiente: false
+          });
+          quitarDePendientes();
+          mostrarToast('Cita agendada ✓ ' + cliente + ' · ' + hora);
         })
-        .catch(err => alert('Error al agendar: ' + err.message))
-        .finally(() => setBtnCargando(btn, false));
+        .catch(err => {
+          quitarDePendientes();
+          const arr = diaCacheado(sede, fecha);
+          if (arr) { const j = arr.indexOf(temp); if (j >= 0) arr.splice(j, 1); }
+          alert('No se pudo agendar a ' + cliente + ' (' + hora + ', ' + nombreSede(sede) + '):\n' + err.message);
+        })
+        .finally(() => refrescarTrasCambio(sede, [fecha]));
     }
 
     // ===================== CONFIRMAR (CITAS DE HOY) =====================
@@ -1432,7 +1452,7 @@
       function inicio(y, x) {
         startY = y; startX = x; top0 = parseFloat(div.style.top);
         activo = false; movido = false; deltaMin = 0;
-        if (ev.recurrente) return;
+                if (ev.recurrente || ev.pendiente) return;
         timer = setTimeout(() => {
           activo = true;
           calArrastrando = true;
@@ -1516,7 +1536,7 @@
         ev.manicurista ? 'Manicurista: ' + ev.manicurista : ''
       ].filter(Boolean).join(' · ');
 
-      const bloqueado = ev.recurrente || ev.todoElDia;
+            const bloqueado = ev.recurrente || ev.todoElDia || ev.pendiente;
       document.getElementById('meEditor').style.display = bloqueado ? 'none' : 'block';
       document.getElementById('meAviso').style.display = bloqueado ? 'block' : 'none';
 
