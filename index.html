@@ -23,7 +23,6 @@
     :root {
       --apple-blue: #007AFF;
       --bg-color: #F2F2F7;
-      --card-bg: #FFFFFF;
       --text-main: #1C1C1E;
       --text-muted: #8E8E93;
       --border-color: #E5E5EA;
@@ -54,13 +53,11 @@
     .view { display: none; min-height: 100%; }
     .view.active { display: block; }
 
-    .booking-content { padding: 20px 16px 0 16px; }
+    .booking-content { padding: 16px 16px 0 16px; }
     .title { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
-    .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-    .header-actions { display: flex; gap: 8px; }
     .icon-btn {
       background: var(--fill); border: none; width: 40px; height: 40px; border-radius: 12px;
-      font-size: 15px; font-weight: 700; cursor: pointer; color: var(--text-main);
+      font-size: 16px; cursor: pointer; flex-shrink: 0;
       display: flex; align-items: center; justify-content: center;
     }
 
@@ -71,36 +68,25 @@
     }
     .seg-btn {
       flex: 1; text-align: center; padding: 8px 0;
-      font-size: 14px; font-weight: 500;
+      font-size: 14px; font-weight: 600;
       color: var(--text-main); background: transparent;
       border: none; border-radius: 7px; cursor: pointer;
       transition: all 0.2s ease;
     }
-    .seg-btn.active {
-      background-color: #fff;
-      box-shadow: 0 3px 8px rgba(0,0,0,0.12), 0 3px 1px rgba(0,0,0,0.04);
-    }
-    .sede-control .seg-btn { font-weight: 600; }
-    .sede-control .seg-btn.active { background: var(--apple-blue); color: #fff; }
-
-    .fecha-wrapper { position: relative; flex: 1; display: flex; }
-    #fechaPicker { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
-    #btnFechaLabel { width: 100%; pointer-events: none; }
+    .sede-control .seg-btn.active { background: var(--apple-blue); color: #fff; box-shadow: 0 3px 8px rgba(0,0,0,0.12); }
 
     /* Botones */
-    .btn-primary, .btn-secondary, .btn-danger {
+    .btn-primary, .btn-danger {
       width: 100%; font-size: 17px; font-weight: 600;
       padding: 14px; border: none; border-radius: 12px;
       cursor: pointer; transition: transform 0.1s ease;
     }
     .btn-primary { background: var(--apple-blue); color: #fff; box-shadow: 0 4px 10px rgba(0,122,255,0.3); }
-    .btn-secondary { background: #1C1C1E; color: #fff; }
     .btn-danger { background: #FFE5E5; color: var(--danger); margin-top: 10px; }
-    .btn-primary:active, .btn-secondary:active, .btn-danger:active { transform: scale(0.97); }
-    button:disabled { opacity: 0.6; }
+    .btn-primary:active, .btn-danger:active { transform: scale(0.97); }
 
     /* Campos */
-    .field { margin-top: 20px; }
+    .field { margin-top: 16px; }
     .field-label {
       font-size: 13px; color: var(--text-muted); font-weight: 500;
       margin-bottom: 6px; padding-left: 4px; display: block;
@@ -126,32 +112,16 @@
       background: #1C1C1E; color: #fff; border: none; border-radius: 12px;
       width: 50px; height: 50px; flex-shrink: 0;
       display: flex; justify-content: center; align-items: center;
-      cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+      cursor: pointer;
     }
     .btn-ig:active { transform: scale(0.95); }
 
     #igSeleccionadoLabel { display: none; font-size: 12px; color: var(--apple-blue); font-weight: 600; margin-bottom: 6px; padding-left: 4px; }
 
-    /* Horarios */
-    #horariosBotonesContainer {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
-      gap: 8px; margin-top: 12px;
-    }
-    .horario-btn {
-      width: 100%; background: var(--fill); color: var(--text-main); border: none; border-radius: 20px;
-      padding: 10px 0; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.15s ease;
-    }
-    .horario-btn.selected { background: var(--apple-blue); color: #fff; box-shadow: 0 4px 10px rgba(0,122,255,0.3); }
-    .horarios-msg { grid-column: 1 / -1; color: var(--text-muted); font-size: 14px; padding: 4px; }
-
-    /* Config manicuristas */
-    .config-grid { display: flex; gap: 10px; padding: 20px 16px 10px; flex-wrap: wrap; justify-content: center; }
-    .config-num-btn {
-      width: 50px; height: 50px; border-radius: 50%; border: none;
-      background: var(--fill); color: var(--text-main); font-size: 18px; font-weight: 600;
-      cursor: pointer; transition: all 0.15s ease;
-    }
-    .config-num-btn.selected { background: var(--apple-blue); color: #fff; box-shadow: 0 4px 10px rgba(0,122,255,0.3); }
+    /* Nueva cita */
+    .nc-resumen { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    #ncCuando { font-size: 18px; font-weight: 700; }
+    #ncSede { font-size: 13px; font-weight: 600; color: #fff; background: var(--apple-blue); padding: 5px 10px; border-radius: 999px; white-space: nowrap; }
 
     /* Lista Confirmar */
     .btn-square {
@@ -173,12 +143,14 @@
       z-index: 999; opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
       display: flex; align-items: flex-end;
     }
+    .modal-overlay.ligero { background: rgba(0,0,0,0.12); backdrop-filter: none; -webkit-backdrop-filter: none; }
     .modal-overlay.active { opacity: 1; pointer-events: auto; }
     .modal-sheet {
-      background: #fff; width: 100%; max-height: 80vh; border-radius: 20px 20px 0 0;
+      background: #fff; width: 100%; max-height: 85vh; border-radius: 20px 20px 0 0;
       transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
       display: flex; flex-direction: column;
       padding-bottom: calc(20px + env(safe-area-inset-bottom));
+      box-shadow: 0 -6px 24px rgba(0,0,0,0.12);
     }
     .modal-overlay.active .modal-sheet { transform: translateY(0); }
     .modal-header {
@@ -194,6 +166,7 @@
     .ig-item { padding: 16px 0; border-bottom: 0.5px solid var(--border-color); cursor: pointer; font-size: 17px; }
     .ig-item:last-child { border-bottom: none; }
     .ig-item.muted { text-align: center; color: var(--text-muted); cursor: default; }
+    #meAviso { display: none; background: var(--bg-color); border-radius: 12px; padding: 12px; font-size: 14px; color: var(--text-muted); }
 
     /* Tab bar */
     .tab-bar {
@@ -213,26 +186,32 @@
       position: fixed; top: -80px; left: 50%; transform: translateX(-50%);
       background: rgba(0,0,0,0.8); color: #fff; padding: 12px 24px;
       border-radius: 20px; font-size: 15px; font-weight: 500; white-space: nowrap;
+      max-width: 92vw; overflow: hidden; text-overflow: ellipsis;
       transition: top 0.3s ease; z-index: 1000;
     }
 
     /* Calendario */
-    .cal-nav { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .cal-header { position: sticky; top: 0; z-index: 70; background: var(--bg-color); padding-bottom: 8px; box-shadow: 0 0.5px 0 var(--border-color); }
+    .cal-top { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .cal-top .segmented-control { flex: 1; margin-bottom: 0; }
+    .cal-nav { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
     .cal-nav-btn { background: var(--fill); border: none; width: 40px; height: 40px; border-radius: 12px; font-size: 22px; cursor: pointer; color: var(--text-main); flex-shrink: 0; }
     .cal-hoy-btn { background: var(--fill); border: none; height: 40px; padding: 0 14px; border-radius: 12px; font-size: 14px; font-weight: 600; cursor: pointer; color: var(--apple-blue); flex-shrink: 0; }
     .cal-fecha-wrap { flex: 1; min-width: 0; position: relative; text-align: center; font-size: 16px; font-weight: 600; height: 40px; line-height: 40px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     #calFechaPicker { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; }
+    .cal-ayuda { font-size: 12px; color: var(--text-muted); text-align: center; }
     .cal-grid { padding: 0 8px 0 0; transition: opacity .2s; }
     .cal-grid.slide-izq { animation: slideIzq .22s ease; }
     .cal-grid.slide-der { animation: slideDer .22s ease; }
     @keyframes slideIzq { from { transform: translateX(40px); opacity: .3; } to { transform: none; opacity: 1; } }
     @keyframes slideDer { from { transform: translateX(-40px); opacity: .3; } to { transform: none; opacity: 1; } }
-    .cal-allday { padding: 0 0 8px 52px; display: flex; flex-direction: column; gap: 4px; }
+    .cal-allday { padding: 8px 0 0 52px; display: flex; flex-direction: column; gap: 4px; }
     .cal-allday-item { background: var(--text-muted); color: #fff; border-radius: 6px; padding: 4px 8px; font-size: 12px; font-weight: 600; cursor: pointer; }
-    .cal-body { position: relative; margin-top: 10px; }
+    .cal-body { position: relative; margin-top: 12px; }
     .cal-line { position: absolute; left: 48px; right: 0; border-top: 0.5px solid var(--border-color); }
+    .cal-line.media { border-top-style: dashed; opacity: .6; }
     .cal-hora { position: absolute; left: 0; width: 42px; text-align: right; font-size: 11px; color: var(--text-muted); transform: translateY(-50%); }
-    .cal-eventos { position: absolute; top: 0; bottom: 0; left: 52px; right: 0; }
+    .cal-eventos { position: absolute; top: 0; bottom: 0; left: 52px; right: 0; cursor: pointer; }
     .cal-evento {
       position: absolute; border-radius: 6px; padding: 3px 6px; color: #fff; overflow: hidden;
       font-size: 12px; line-height: 1.25; cursor: pointer;
@@ -241,14 +220,16 @@
     }
     .cal-evento.arrastrando { z-index: 50; box-shadow: 0 8px 20px rgba(0,0,0,.3); transform: scale(1.03); transition: none; }
     .cal-evento-fijo { opacity: .7; }
+    .cal-evento-pendiente { opacity: .6; background-image: repeating-linear-gradient(45deg, rgba(255,255,255,.18) 0 6px, transparent 6px 12px); }
     .cal-ev-t { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .cal-ev-s { opacity: .9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .cal-now { position: absolute; left: 0; right: 0; border-top: 2px solid var(--danger); z-index: 40; pointer-events: none; }
     .cal-now::before { content: ''; position: absolute; left: -5px; top: -6px; width: 10px; height: 10px; border-radius: 50%; background: var(--danger); }
-    .cal-ayuda { font-size: 12px; color: var(--text-muted); text-align: center; margin-bottom: 4px; }
-
-    .cal-header { position: sticky; top: 0; z-index: 70; background: var(--bg-color); padding-bottom: 8px; box-shadow: 0 0.5px 0 var(--border-color); }
-    #meAviso { display: none; background: var(--bg-color); border-radius: 12px; padding: 12px; font-size: 14px; color: var(--text-muted); }
+    .cal-fantasma {
+      position: absolute; left: 1px; right: 2px; z-index: 45; pointer-events: none;
+      border-radius: 6px; background: rgba(0,122,255,.15); border: 2px solid var(--apple-blue);
+      color: var(--apple-blue); font-size: 12px; font-weight: 700; padding: 3px 6px;
+    }
   </style>
 </head>
 <body>
@@ -257,32 +238,53 @@
 
   <div class="view-container">
 
-    <!-- ===== RESERVA ===== -->
-    <div id="view-booking" class="view active">
+    <!-- ===== CALENDARIO (principal) ===== -->
+    <div id="view-calendario" class="view active">
+      <div class="booking-content cal-header">
+        <div class="cal-top">
+          <div class="segmented-control sede-control" id="sedeControl">
+            <button class="seg-btn" data-sede="miraflores" onclick="cambiarSede('miraflores')">Miraflores</button>
+            <button class="seg-btn" data-sede="surco" onclick="cambiarSede('surco')">Surco</button>
+          </div>
+          <button class="icon-btn" onclick="activarNotificaciones()" aria-label="Notificaciones">🔔</button>
+        </div>
+        <div class="cal-nav">
+          <button class="cal-nav-btn" onclick="cambiarDiaAnimado(-1)" aria-label="Día anterior">‹</button>
+          <div class="cal-fecha-wrap">
+            <span id="calFechaLabel"></span>
+            <input type="date" id="calFechaPicker" onchange="elegirFechaCal(this)">
+          </div>
+          <button class="cal-nav-btn" onclick="cambiarDiaAnimado(1)" aria-label="Día siguiente">›</button>
+          <button class="cal-hoy-btn" onclick="irHoy()">Hoy</button>
+        </div>
+        <div class="cal-ayuda">Toca un horario para agendar · Mantén presionada una cita para moverla</div>
+      </div>
+      <div id="calGrid" class="cal-grid"></div>
+    </div>
+
+    <!-- ===== CONFIRMAR ===== -->
+    <div id="view-agenda" class="view">
       <div class="booking-content">
-        <div class="header-row">
-          <div class="title">Booking</div>
-          <div class="header-actions">
-            <button class="icon-btn" onclick="activarNotificaciones()" aria-label="Notificaciones">🔔</button>
-            <button class="icon-btn" onclick="abrirModalConfig()" id="btnConfig" aria-label="Manicuristas disponibles">01</button>
-          </div>
+        <div class="title" style="margin-bottom:16px;">Citas de hoy</div>
+        <div class="segmented-control sede-control" id="sedeAgendaControl">
+          <button class="seg-btn" data-sede="miraflores" onclick="cambiarSedeConfirmar('miraflores')">Miraflores</button>
+          <button class="seg-btn" data-sede="surco" onclick="cambiarSedeConfirmar('surco')">Surco</button>
         </div>
+        <div id="eventosListContainer"><div class="empty-msg">Cargando citas...</div></div>
+      </div>
+    </div>
 
-        <div class="segmented-control sede-control" id="sedeReservaControl">
-          <button class="seg-btn" data-sede="miraflores" onclick="cambiarSedeReserva('miraflores')">Miraflores</button>
-          <button class="seg-btn" data-sede="surco" onclick="cambiarSedeReserva('surco')">Surco</button>
+  </div>
+
+  <!-- ===== NUEVA CITA ===== -->
+  <div id="modalNueva" class="modal-overlay ligero" onclick="if(event.target===this)cerrarNuevaCita()">
+    <div class="modal-sheet">
+      <div class="modal-header">Nueva cita<button class="close-btn" onclick="cerrarNuevaCita()">Cancelar</button></div>
+      <div class="modal-body">
+        <div class="nc-resumen">
+          <div id="ncCuando"></div>
+          <div id="ncSede"></div>
         </div>
-
-        <div class="segmented-control">
-          <button class="seg-btn active" id="btnHoy" onclick="selectDateType('hoy', this)">Hoy</button>
-          <button class="seg-btn" id="btnManana" onclick="selectDateType('mañana', this)">Mañana</button>
-          <div class="fecha-wrapper">
-            <button class="seg-btn" id="btnFechaLabel">Fecha</button>
-            <input type="date" id="fechaPicker" onchange="handleDatePick(this)">
-          </div>
-        </div>
-
-        <button class="btn-primary" id="btnCopiar" onclick="copiarHorarios()">Copiar horarios</button>
 
         <div class="field">
           <label class="field-label">Clienta</label>
@@ -297,7 +299,7 @@
 
         <div class="field">
           <label class="field-label">Tiempo de atención</label>
-          <select id="duracionSelect" class="duracion-select" onchange="actualizarHorarios()">
+          <select id="ncDuracion" class="duracion-select" onchange="actualizarResumenNueva()">
             <option value="30">30 min</option>
             <option value="60">1 hora</option>
             <option value="90" selected>1.5 horas</option>
@@ -306,7 +308,6 @@
             <option value="180">3 horas</option>
             <option value="240">4 horas</option>
           </select>
-          <div id="horariosBotonesContainer"></div>
         </div>
 
         <div class="field">
@@ -326,88 +327,19 @@
           </div>
         </div>
 
-        <button class="btn-secondary" id="btnAgendar" onclick="agendarCita()" style="margin-top:24px;">Agendar cita</button>
-      </div>
-    </div>
-
-    <!-- ===== CONFIRMAR ===== -->
-    <div id="view-agenda" class="view">
-      <div class="booking-content">
-        <div class="title" style="margin-bottom:16px;">Citas de hoy</div>
-        <div class="segmented-control sede-control" id="sedeAgendaControl">
-          <button class="seg-btn" data-sede="miraflores" onclick="cambiarSedeReserva('miraflores')">Miraflores</button>
-          <button class="seg-btn" data-sede="surco" onclick="cambiarSedeReserva('surco')">Surco</button>
-        </div>
-        <div id="eventosListContainer"><div class="empty-msg">Cargando citas...</div></div>
-      </div>
-    </div>
-
-    <!-- ===== CALENDARIO ===== -->
-    <div id="view-calendario" class="view">
-      <div class="booking-content cal-header">
-        <div class="segmented-control sede-control" id="sedeControl" style="margin-bottom:12px;">
-          <button class="seg-btn" data-sede="miraflores" onclick="cambiarSede('miraflores')">Miraflores</button>
-          <button class="seg-btn" data-sede="surco" onclick="cambiarSede('surco')">Surco</button>
-        </div>
-        <div class="cal-nav">
-          <button class="cal-nav-btn" onclick="cambiarDiaAnimado(-1)" aria-label="Día anterior">‹</button>
-          <div class="cal-fecha-wrap">
-            <span id="calFechaLabel"></span>
-            <input type="date" id="calFechaPicker" onchange="elegirFechaCal(this)">
-          </div>
-          <button class="cal-nav-btn" onclick="cambiarDiaAnimado(1)" aria-label="Día siguiente">›</button>
-          <button class="cal-hoy-btn" onclick="irHoy()">Hoy</button>
-        </div>
-        <div class="cal-ayuda">Toca una cita para editarla · Mantén presionado para moverla</div>
-      </div>
-      <div id="calGrid" class="cal-grid"></div>
-    </div>
-
-  </div>
-
-  <!-- ===== MODALES ===== -->
-  <div id="modalIG" class="modal-overlay" onclick="if(event.target===this)cerrarModalIG()">
-    <div class="modal-sheet">
-      <div class="modal-header">Seleccionar IG<button class="close-btn" onclick="cerrarModalIG()">Cerrar</button></div>
-      <div class="ig-list" id="igListContainer"><div class="ig-item muted">Cargando lista...</div></div>
-    </div>
-  </div>
-
-  <div id="modalConfig" class="modal-overlay" onclick="if(event.target===this)cerrarModalConfig()">
-    <div class="modal-sheet">
-      <div class="modal-header"><span id="configTitulo">Manicuristas disponibles</span><button class="close-btn" onclick="cerrarModalConfig()">Cerrar</button></div>
-      <div class="config-grid">
-        <button class="config-num-btn" data-num="1" onclick="elegirNumTrabajadores(1)">1</button>
-        <button class="config-num-btn" data-num="2" onclick="elegirNumTrabajadores(2)">2</button>
-        <button class="config-num-btn" data-num="3" onclick="elegirNumTrabajadores(3)">3</button>
-        <button class="config-num-btn" data-num="4" onclick="elegirNumTrabajadores(4)">4</button>
-        <button class="config-num-btn" data-num="5" onclick="elegirNumTrabajadores(5)">5</button>
-        <button class="config-num-btn" data-num="6" onclick="elegirNumTrabajadores(6)">6</button>
+        <button class="btn-primary" style="margin-top:20px;" onclick="guardarNuevaCita()">Agendar cita</button>
       </div>
     </div>
   </div>
 
-  <div id="modalServicio" class="modal-overlay" onclick="if(event.target===this)cerrarModalServicio()">
-    <div class="modal-sheet">
-      <div class="modal-header">Seleccionar servicio<button class="close-btn" onclick="cerrarModalServicio()">Cerrar</button></div>
-      <div class="ig-list" id="servicioListContainer"><div class="ig-item muted">Cargando...</div></div>
-    </div>
-  </div>
-
-  <div id="modalManicuristaEvento" class="modal-overlay" onclick="if(event.target===this)cerrarModalManicuristaEvento()">
-    <div class="modal-sheet">
-      <div class="modal-header">Asignar manicurista<button class="close-btn" onclick="cerrarModalManicuristaEvento()">Cerrar</button></div>
-      <div class="ig-list" id="manicuristaEventoListContainer"></div>
-    </div>
-  </div>
-
+  <!-- ===== EDITAR CITA ===== -->
   <div id="modalEvento" class="modal-overlay" onclick="if(event.target===this)cerrarModalEvento()">
     <div class="modal-sheet">
       <div class="modal-header">Cita<button class="close-btn" onclick="cerrarModalEvento()">Cerrar</button></div>
       <div class="modal-body">
         <div id="meTitulo" style="font-size:20px; font-weight:700;"></div>
         <div id="meSub" style="color:var(--text-muted); font-size:14px; margin:4px 0 16px;"></div>
-        <div id="meAviso">Evento recurrente o de todo el día: edítalo desde Google Calendar.</div>
+        <div id="meAviso"></div>
         <div id="meEditor">
           <label class="field-label">Fecha</label>
           <input type="date" id="meFecha" class="client-input">
@@ -428,10 +360,31 @@
     </div>
   </div>
 
+  <!-- ===== LISTAS (van al final para abrirse encima de Nueva cita) ===== -->
+  <div id="modalManicuristaEvento" class="modal-overlay" onclick="if(event.target===this)cerrarModalManicuristaEvento()">
+    <div class="modal-sheet">
+      <div class="modal-header">Asignar manicurista<button class="close-btn" onclick="cerrarModalManicuristaEvento()">Cerrar</button></div>
+      <div class="ig-list" id="manicuristaEventoListContainer"></div>
+    </div>
+  </div>
+
+  <div id="modalIG" class="modal-overlay" onclick="if(event.target===this)cerrarModalIG()">
+    <div class="modal-sheet">
+      <div class="modal-header">Seleccionar IG<button class="close-btn" onclick="cerrarModalIG()">Cerrar</button></div>
+      <div class="ig-list" id="igListContainer"><div class="ig-item muted">Cargando lista...</div></div>
+    </div>
+  </div>
+
+  <div id="modalServicio" class="modal-overlay" onclick="if(event.target===this)cerrarModalServicio()">
+    <div class="modal-sheet">
+      <div class="modal-header">Seleccionar servicio<button class="close-btn" onclick="cerrarModalServicio()">Cerrar</button></div>
+      <div class="ig-list" id="servicioListContainer"></div>
+    </div>
+  </div>
+
   <div class="tab-bar">
-    <div class="tab-item active" id="tab-booking" onclick="switchTab('booking')">Reserva</div>
+    <div class="tab-item active" id="tab-calendario" onclick="switchTab('calendario')">Calendario</div>
     <div class="tab-item" id="tab-agenda" onclick="switchTab('agenda')">Confirmar</div>
-    <div class="tab-item" id="tab-calendario" onclick="switchTab('calendario')">Calendario</div>
   </div>
 
   <script>
@@ -442,15 +395,7 @@
     const nombresMeses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
     const diasSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
-    let HORARIO = leerJSON('horario') || { inicio: 11, fin: 21, finDomingo: 17 };
-    let sedeReserva = localStorage.getItem('sedeReserva') || 'miraflores';
-    let numTrabajadores = leerNumTrabajadores();
-    let selectedDateType = 'hoy';
-    let customDate = null;
-    let labelNombre = 'hoy';
-    let duracionMinutos = 90;
-    let horarioSeleccionado = null;
-    let horariosReq = 0;
+    let confSede = localStorage.getItem('confSede') || localStorage.getItem('sedeReserva') || 'miraflores';
 
     let igHandles = leerJSON('igCache') || [];
     let igLoaded = false;
@@ -460,6 +405,8 @@
     let manicuristasList = [];
     let serviciosList = [];
 
+    let solicitud = null;   // clienta que llegó por notificación {ig, nombre}
+    let nuevaCita = null;   // {sede, fecha, inicio, idem}
     let toastTimer = null;
 
     // ===================== UTILIDADES =====================
@@ -482,13 +429,10 @@
       });
     }
 
-    function leerNumTrabajadores() {
-      return parseInt(localStorage.getItem('numTrabajadores_' + sedeReserva) || localStorage.getItem('numTrabajadores')) || 1;
-    }
-
     const nombreSede = s => s === 'surco' ? 'Surco' : 'Miraflores';
     const otraSede = s => s === 'surco' ? 'miraflores' : 'surco';
     const vistaActiva = id => document.getElementById('view-' + id).classList.contains('active');
+    const hayModalAbierto = () => !!document.querySelector('.modal-overlay.active');
 
     function fechaKeyLocal(d) {
       return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
@@ -503,6 +447,8 @@
       h = h % 12 || 12;
       return h + ':' + String(m).padStart(2, '0') + ' ' + ap;
     }
+    function rangoHora(a, b) { return formatHora12(new Date(a)) + ' – ' + formatHora12(new Date(b)); }
+    function fechaCorta(d) { return diasSemana[d.getDay()] + ' ' + d.getDate() + ' ' + nombresMeses[d.getMonth()]; }
 
     function copiarTexto(texto) {
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -530,17 +476,6 @@
       toastTimer = setTimeout(() => { toast.style.top = '-80px'; }, 2500);
     }
 
-    function setBtnCargando(btn, cargando, texto) {
-      if (cargando) {
-        btn.dataset.txt = btn.innerText;
-        btn.innerText = texto;
-        btn.disabled = true;
-      } else {
-        btn.innerText = btn.dataset.txt || btn.innerText;
-        btn.disabled = false;
-      }
-    }
-
     function msgLista(container, texto, clase) {
       container.innerHTML = '';
       const d = document.createElement('div');
@@ -555,11 +490,11 @@
       document.querySelectorAll('.view').forEach(v => v.style.paddingBottom = espacio);
     }
 
-    // ===================== CACHÉ DE DÍAS (una sola fuente para todo) =====================
+    // ===================== CACHÉ DE DÍAS =====================
     // Muestra al instante lo guardado y actualiza en segundo plano.
     const DIA_FRESCO_MS = 30000;
-        const diaCache = new Map();
-    const citasPendientes = []; // citas que se están guardando en segundo plano
+    const diaCache = new Map();
+    const citasPendientes = []; // citas guardándose en segundo plano
     let diaSeq = 0;
 
     const claveDia = (sede, fecha) => sede + '_' + fecha;
@@ -584,7 +519,7 @@
         if (!Array.isArray(data)) throw new Error((data && data.error) || 'Respuesta inválida');
         const cur = diaCache.get(k) || {};
         if (!cur.data || seq > (cur.seq || 0)) {
-                    cur.data = data.concat(citasPendientes.filter(p => p.k === k).map(p => p.ev));
+          cur.data = data.concat(citasPendientes.filter(x => x.k === k).map(x => x.ev));
           cur.t = Date.now();
           cur.seq = seq;
         }
@@ -605,17 +540,19 @@
     function precargarDias() {
       const hoy = new Date();
       const man = new Date(); man.setDate(man.getDate() + 1);
-      [sedeReserva, otraSede(sedeReserva)].forEach(s => {
+      [calSede, otraSede(calSede)].forEach(s => {
         [hoy, man].forEach(d => obtenerDia(s, fechaKeyLocal(d)).catch(() => {}));
       });
     }
 
-    // Tras crear/mover/borrar: recarga esos días y refresca las vistas afectadas
+    // Tras crear/mover/borrar: recarga esos días y refresca lo que se está viendo
     function refrescarTrasCambio(sede, fechas) {
       Promise.all(fechas.map(f => obtenerDia(sede, f, true).catch(() => {}))).then(() => {
-        if (sede === sedeReserva) {
-          actualizarHorarios();
-          if (vistaActiva('agenda')) cargarEventosHoy();
+        if (vistaActiva('agenda') && sede === confSede) cargarEventosHoy();
+        if (vistaActiva('calendario') && sede === calSede && fechas.includes(fechaKeyLocal(calFecha))
+            && !calArrastrando && !document.getElementById('modalEvento').classList.contains('active')) {
+          const d = diaCacheado(sede, fechaKeyLocal(calFecha));
+          if (d) { calEventos = clonar(d); pintarCalendario(); }
         }
       });
     }
@@ -633,12 +570,11 @@
         });
       });
 
-      pintarSedeReserva();
-      actualizarBotonConfigLabel();
+      pintarSedeConfirmar();
       cargarInit();
-      actualizarHorarios();
-      precargarDias();
       activarSwipeCalendario();
+      initCalendario();
+      precargarDias();
       ajustarEspacioInferior();
       window.addEventListener('resize', ajustarEspacioInferior);
       setTimeout(() => cargarClientesIG(), 1500);
@@ -647,19 +583,20 @@
         if (document.visibilityState !== 'visible') return;
         marcarTodoViejo();
         cargarInit();
-        actualizarHorarios();
         if (vistaActiva('agenda')) cargarEventosHoy();
-        if (vistaActiva('calendario')) cargarCalendario();
+        if (vistaActiva('calendario') && !hayModalAbierto()) cargarCalendario();
       });
 
-      // Cada 2 min: quita horarios que ya pasaron y trae cambios nuevos
+      // Cada minuto: mueve la línea de "ahora" y trae cambios nuevos
       setInterval(() => {
-        if (document.visibilityState === 'visible') actualizarHorarios();
-      }, 2 * 60 * 1000);
+        if (document.visibilityState === 'visible' && vistaActiva('calendario') && !hayModalAbierto() && !calArrastrando) {
+          cargarCalendario();
+        }
+      }, 60 * 1000);
     };
 
     function switchTab(tab) {
-      ['booking', 'agenda', 'calendario'].forEach(t => {
+      ['calendario', 'agenda'].forEach(t => {
         document.getElementById('view-' + t).classList.toggle('active', t === tab);
         document.getElementById('tab-' + t).classList.toggle('active', t === tab);
       });
@@ -690,12 +627,6 @@
       const extras = serviciosList.filter(s => !nuevos.some(n => n.toLowerCase() === s.toLowerCase()));
       serviciosList = nuevos.concat(extras);
       pintarSelectManicuristas();
-
-      if (d.horario && JSON.stringify(d.horario) !== JSON.stringify(HORARIO)) {
-        HORARIO = d.horario;
-        guardarJSON('horario', HORARIO);
-        actualizarHorarios();
-      }
     }
 
     function pintarSelectManicuristas() {
@@ -723,37 +654,42 @@
       label.style.display = igSeleccionado ? 'block' : 'none';
     }
 
+    function limpiarSolicitud() {
+      solicitud = null;
+      const b = document.getElementById('bannerSolicitud');
+      if (b) b.remove();
+    }
+
     function mostrarSolicitud(ig, nombre) {
       ig = (ig || '').trim().replace(/^@/, '');
       nombre = (nombre || '').trim();
       if (!ig && !nombre) return;
 
-      if (nombre) document.getElementById('nombreClienta').value = nombre;
-      if (ig) setIGSeleccionado(ig);
+      solicitud = { ig: ig, nombre: nombre };
+      if (!vistaActiva('calendario')) switchTab('calendario');
 
       const anterior = document.getElementById('bannerSolicitud');
       if (anterior) anterior.remove();
-      if (!ig) return;
 
       const barra = document.createElement('div');
       barra.id = 'bannerSolicitud';
       barra.style.cssText = 'position:fixed; top:0; left:0; right:0; z-index:500; display:flex; align-items:center; background:#007AFF; color:#fff; box-shadow:0 4px 14px rgba(0,0,0,0.18); padding-top:env(safe-area-inset-top);';
 
-      const enlace = document.createElement('a');
-      enlace.href = 'https://ig.me/m/' + encodeURIComponent(ig);
+      const enlace = document.createElement(ig ? 'a' : 'div');
+      if (ig) enlace.href = 'https://ig.me/m/' + encodeURIComponent(ig);
       enlace.style.cssText = 'flex:1; min-width:0; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 8px 14px 16px; color:#fff; text-decoration:none;';
       enlace.innerHTML =
         '<div style="min-width:0;">' +
-          '<div style="font-size:12px; opacity:0.85;">Quiere agendar</div>' +
+          '<div style="font-size:12px; opacity:0.85;">Quiere agendar · toca un horario</div>' +
           '<div class="banner-ig" style="font-size:16px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"></div>' +
         '</div>' +
-        '<span style="font-size:14px; font-weight:600; background:rgba(255,255,255,0.22); padding:8px 14px; border-radius:999px; white-space:nowrap;">Abrir DM</span>';
-      enlace.querySelector('.banner-ig').textContent = '@' + ig;
+        (ig ? '<span style="font-size:14px; font-weight:600; background:rgba(255,255,255,0.22); padding:8px 14px; border-radius:999px; white-space:nowrap;">Abrir DM</span>' : '');
+      enlace.querySelector('.banner-ig').textContent = ig ? '@' + ig : nombre;
 
       const cerrar = document.createElement('button');
       cerrar.innerText = '✕';
       cerrar.style.cssText = 'background:none; border:none; color:#fff; font-size:18px; padding:14px 16px; cursor:pointer; opacity:0.8;';
-      cerrar.onclick = () => barra.remove();
+      cerrar.onclick = limpiarSolicitud;
 
       barra.appendChild(enlace);
       barra.appendChild(cerrar);
@@ -771,180 +707,104 @@
       }
     }
 
-    // ===================== SEDE =====================
-    function pintarSedeReserva() {
-      document.querySelectorAll('#sedeReservaControl .seg-btn, #sedeAgendaControl .seg-btn')
-        .forEach(b => b.classList.toggle('active', b.dataset.sede === sedeReserva));
+    // ===================== NUEVA CITA (popup) =====================
+    function duracionNueva() {
+      return parseInt(document.getElementById('ncDuracion').value, 10) || 90;
     }
 
-    function cambiarSedeReserva(sede) {
-      if (sede === sedeReserva) return;
-      sedeReserva = sede;
-      localStorage.setItem('sedeReserva', sede);
-      numTrabajadores = leerNumTrabajadores();
-      horarioSeleccionado = null;
-      actualizarBotonConfigLabel();
-      pintarSedeReserva();
-      actualizarHorarios();
-      if (vistaActiva('agenda')) cargarEventosHoy();
+    function abrirNuevaCita(inicio) {
+      nuevaCita = {
+        sede: calSede,
+        fecha: fechaKeyLocal(new Date(inicio)),
+        inicio: inicio,
+        idem: 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8)
+      };
+
+      document.getElementById('nombreClienta').value = solicitud && solicitud.nombre ? solicitud.nombre : '';
+      document.getElementById('servicioInput').value = '';
+      setIGSeleccionado(solicitud ? solicitud.ig : '');
+
+      actualizarResumenNueva();
+      document.getElementById('modalNueva').classList.add('active');
     }
 
-    // ===================== FECHA (RESERVA) =====================
-    function selectDateType(type, element) {
-      ['btnHoy', 'btnManana', 'btnFechaLabel'].forEach(id => document.getElementById(id).classList.remove('active'));
-      element.classList.add('active');
-      selectedDateType = type;
-      labelNombre = type;
-      horarioSeleccionado = null;
-      document.getElementById('btnFechaLabel').innerText = 'Fecha';
-      document.getElementById('fechaPicker').value = '';
-      actualizarHorarios();
+    function actualizarResumenNueva() {
+      if (!nuevaCita) return;
+      const fin = nuevaCita.inicio + duracionNueva() * 60000;
+      document.getElementById('ncCuando').textContent = fechaCorta(new Date(nuevaCita.inicio)) + ' · ' + rangoHora(nuevaCita.inicio, fin);
+      document.getElementById('ncSede').textContent = nombreSede(nuevaCita.sede);
+      pintarCalendario();
     }
 
-    function handleDatePick(input) {
-      if (!input.value) return;
-      selectedDateType = 'fecha';
-      const p = input.value.split('-');
-      customDate = new Date(p[0], p[1] - 1, p[2]);
-
-      const dia = ('0' + customDate.getDate()).slice(-2);
-      const mes = nombresMeses[customDate.getMonth()];
-      document.getElementById('btnFechaLabel').innerText = dia + ' ' + mes;
-      labelNombre = 'el ' + dia + ' de ' + mes;
-
-      document.getElementById('btnHoy').classList.remove('active');
-      document.getElementById('btnManana').classList.remove('active');
-      document.getElementById('btnFechaLabel').classList.add('active');
-      horarioSeleccionado = null;
-      actualizarHorarios();
+    function cerrarNuevaCita() {
+      document.getElementById('modalNueva').classList.remove('active');
+      nuevaCita = null;
+      pintarCalendario();
     }
 
-    function getTargetDate() {
-      const d = new Date();
-      if (selectedDateType === 'mañana') d.setDate(d.getDate() + 1);
-      else if (selectedDateType === 'fecha' && customDate) return new Date(customDate);
-      return d;
-    }
+    function guardarNuevaCita() {
+      if (!nuevaCita) return;
+      const cliente = document.getElementById('nombreClienta').value.trim();
+      if (!cliente) return alert('Escribe o selecciona el nombre/IG de la clienta.');
+      const manicurista = document.getElementById('manicuristaSelect').value;
+      if (!manicurista) return alert('Selecciona una manicurista.');
+      const servicio = document.getElementById('servicioInput').value.trim();
+      if (!servicio) return alert('Escribe o selecciona el servicio.');
 
-    // ===================== CONFIG MANICURISTAS =====================
-    function actualizarBotonConfigLabel() {
-      document.getElementById('btnConfig').innerText = String(numTrabajadores).padStart(2, '0');
-    }
+      const { sede, fecha, inicio, idem } = nuevaCita;
+      const duracion = duracionNueva();
+      const ig = igSeleccionado;
 
-    function abrirModalConfig() {
-      document.getElementById('configTitulo').textContent = 'Manicuristas en ' + nombreSede(sedeReserva);
-      document.querySelectorAll('.config-num-btn').forEach(btn => {
-        btn.classList.toggle('selected', parseInt(btn.dataset.num) === numTrabajadores);
-      });
-      document.getElementById('modalConfig').classList.add('active');
-    }
+      // 1) Muestra la cita al instante (en proceso)
+      const temp = {
+        id: 'tmp_' + idem,
+        titulo: cliente + ' - ' + servicio,
+        manicurista: manicurista.toLowerCase() === 'cualquiera' ? '' : manicurista.substring(0, 3),
+        cliente: cliente, servicio: servicio,
+        inicio: inicio, fin: inicio + duracion * 60000,
+        todoElDia: false, recurrente: false, ig: ig, pendiente: true
+      };
+      const pend = { k: claveDia(sede, fecha), ev: temp };
+      citasPendientes.push(pend);
+      const cache = diaCacheado(sede, fecha);
+      if (cache) cache.push(temp);
 
-    function cerrarModalConfig() {
-      document.getElementById('modalConfig').classList.remove('active');
-    }
+      const quitarDePendientes = () => {
+        const i = citasPendientes.indexOf(pend);
+        if (i >= 0) citasPendientes.splice(i, 1);
+      };
 
-    function elegirNumTrabajadores(num) {
-      numTrabajadores = num;
-      localStorage.setItem('numTrabajadores_' + sedeReserva, num);
-      document.querySelectorAll('.config-num-btn').forEach(btn => {
-        btn.classList.toggle('selected', parseInt(btn.dataset.num) === num);
-      });
-      actualizarBotonConfigLabel();
-      setTimeout(cerrarModalConfig, 200);
-      actualizarHorarios();
-    }
-
-    // ===================== HORARIOS (calculados en el teléfono) =====================
-    function ocupacionMaxima(evs, ini, fin) {
-      const p = [];
-      evs.forEach(e => {
-        if (ini < e.fin && fin > e.inicio) {
-          p.push([Math.max(e.inicio, ini), 1]);
-          p.push([Math.min(e.fin, fin), -1]);
-        }
-      });
-      p.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
-      let act = 0, max = 0;
-      p.forEach(x => { act += x[1]; if (act > max) max = act; });
-      return max;
-    }
-
-    function calcularHorarios(data, dia) {
-      const ocup = data.filter(e => !e.todoElDia);
-      const finH = dia.getDay() === 0 ? HORARIO.finDomingo : HORARIO.fin;
-      const ini = new Date(dia.getFullYear(), dia.getMonth(), dia.getDate(), HORARIO.inicio).getTime();
-      const fin = new Date(dia.getFullYear(), dia.getMonth(), dia.getDate(), finH).getTime();
-      const dur = duracionMinutos * 60000, paso = 30 * 60000, ahora = Date.now();
-      const libres = [];
-      for (let t = ini; t + dur <= fin; t += paso) {
-        if (t < ahora) continue;
-        if (ocupacionMaxima(ocup, t, t + dur) < numTrabajadores) libres.push(t);
+      // 2) Cierra el popup de inmediato
+      document.getElementById('modalNueva').classList.remove('active');
+      nuevaCita = null;
+      limpiarSolicitud();
+      agregarServicioLocal(servicio);
+      if (calSede === sede && fechaKeyLocal(calFecha) === fecha) {
+        calEventos = cache ? clonar(cache) : calEventos.concat([Object.assign({}, temp)]);
+        pintarCalendario();
       }
-      return libres;
-    }
+      mostrarToast('Agendando en ' + nombreSede(sede) + '...');
 
-    function pintarHorarios(libres) {
-      const container = document.getElementById('horariosBotonesContainer');
-      const horas = libres.map(t => formatHoraBoton(new Date(t)));
-      if (!horas.includes(horarioSeleccionado)) horarioSeleccionado = null;
-      if (!horas.length) return msgLista(container, 'No hay espacio disponible', 'horarios-msg');
-
-      container.innerHTML = '';
-      horas.forEach(hora => {
-        const btn = document.createElement('button');
-        btn.className = 'horario-btn' + (hora === horarioSeleccionado ? ' selected' : '');
-        btn.innerText = hora;
-        btn.onclick = () => {
-          const yaSel = horarioSeleccionado === hora;
-          document.querySelectorAll('.horario-btn').forEach(b => b.classList.remove('selected'));
-          horarioSeleccionado = yaSel ? null : hora;
-          if (!yaSel) btn.classList.add('selected');
-        };
-        container.appendChild(btn);
-      });
-      ajustarEspacioInferior();
-    }
-
-    function actualizarHorarios(forzar) {
-      duracionMinutos = parseInt(document.getElementById('duracionSelect').value, 10);
-      const sede = sedeReserva, dia = getTargetDate(), fecha = fechaKeyLocal(dia);
-      const req = ++horariosReq;
-      const container = document.getElementById('horariosBotonesContainer');
-
-      const cached = diaCacheado(sede, fecha);
-      if (cached) pintarHorarios(calcularHorarios(cached, dia));
-      else msgLista(container, 'Cargando horarios...', 'horarios-msg');
-
-      obtenerDia(sede, fecha, forzar)
-        .then(data => {
-          if (req === horariosReq && data !== cached) pintarHorarios(calcularHorarios(data, dia));
+      // 3) Guarda en segundo plano (idem evita duplicados)
+      llamarAPI('crearCita', {
+        sede: sede, inicio: inicio, duracion: duracion,
+        manicurista: manicurista, cliente: cliente, servicio: servicio,
+        ig: ig, idem: idem
+      })
+        .then(r => {
+          if (!r || !r.ok) throw new Error((r && r.error) || 'desconocido');
+          Object.assign(temp, { id: r.id, titulo: r.titulo, manicurista: (r.abrev || '').trim(), pendiente: false });
+          quitarDePendientes();
+          mostrarToast('Cita agendada ✓ ' + cliente + ' · ' + formatHora12(new Date(inicio)));
         })
         .catch(err => {
-          if (req === horariosReq && !cached) msgLista(container, 'Error: ' + err.message, 'horarios-msg');
-        });
-    }
-
-    function textoHorarios(libres) {
-      if (!libres.length) return 'Preciosa, no nos queda espacio para ' + labelNombre + '.';
-      return 'Preciosa tengo ' + libres.map(t => formatHora12(new Date(t))).join(' / ') + '\n\n¿A qué hora te agendo?';
-    }
-
-    function copiarHorarios() {
-      const dia = getTargetDate(), fecha = fechaKeyLocal(dia);
-      const cached = diaCacheado(sedeReserva, fecha);
-
-      if (cached) {
-        copiarTexto(textoHorarios(calcularHorarios(cached, dia))).then(() => mostrarToast('Copiado al portapapeles'));
-        return;
-      }
-
-      const btn = document.getElementById('btnCopiar');
-      setBtnCargando(btn, true, 'Buscando...');
-      obtenerDia(sedeReserva, fecha)
-        .then(data => copiarTexto(textoHorarios(calcularHorarios(data, dia))))
-        .then(() => mostrarToast('Copiado al portapapeles'))
-        .catch(err => alert('Error al calcular horarios: ' + err.message))
-        .finally(() => setBtnCargando(btn, false));
+          quitarDePendientes();
+          const arr = diaCacheado(sede, fecha);
+          if (arr) { const j = arr.indexOf(temp); if (j >= 0) arr.splice(j, 1); }
+          alert('No se pudo confirmar la cita de ' + cliente + ' (' + formatHora12(new Date(inicio)) + ', ' + nombreSede(sede) + '):\n' +
+                err.message + '\n\nRevisa el calendario antes de volver a intentarlo.');
+        })
+        .finally(() => refrescarTrasCambio(sede, [fecha]));
     }
 
     // ===================== SERVICIOS =====================
@@ -984,11 +844,8 @@
     function guardarServicioSiEsNuevo() {
       const valor = document.getElementById('servicioInput').value.trim();
       if (!valor || serviciosList.some(s => s.toLowerCase() === valor.toLowerCase())) return;
-
       llamarAPI('guardarServicio', { servicio: valor })
-        .then(r => {
-          if (r && r.ok && !r.existente && agregarServicioLocal(valor)) mostrarToast('Servicio guardado');
-        })
+        .then(r => { if (r && r.ok && !r.existente && agregarServicioLocal(valor)) mostrarToast('Servicio guardado'); })
         .catch(() => {});
     }
 
@@ -1026,6 +883,8 @@
         div.textContent = ig;
         div.onclick = () => {
           setIGSeleccionado(ig);
+          const nombre = document.getElementById('nombreClienta');
+          if (!nombre.value.trim()) nombre.value = '@' + igSeleccionado;
           cerrarModalIG();
         };
         container.appendChild(div);
@@ -1036,88 +895,23 @@
       document.getElementById('modalIG').classList.remove('active');
     }
 
-    // ===================== AGENDAR =====================
-        function agendarCita() {
-      if (!horarioSeleccionado) return alert('Selecciona un horario disponible primero.');
-      const cliente = document.getElementById('nombreClienta').value.trim();
-      if (!cliente) return alert('Escribe o selecciona el nombre/IG de la clienta.');
-      const manicurista = document.getElementById('manicuristaSelect').value;
-      if (!manicurista) return alert('Selecciona una manicurista.');
-      const servicio = document.getElementById('servicioInput').value.trim();
-      if (!servicio) return alert('Escribe o selecciona el servicio.');
-
-      const sede = sedeReserva;
-      const dia = getTargetDate();
-      const fecha = fechaKeyLocal(dia);
-      const hora = horarioSeleccionado;
-      const ig = igSeleccionado;
-      const duracion = duracionMinutos;
-
-      // Hora de inicio para mostrar la cita al instante
-      const m = hora.match(/(\d{1,2}):(\d{2})\s*(am|pm)/i);
-      let hh = +m[1];
-      const mm = +m[2], ap = m[3].toLowerCase();
-      if (ap === 'pm' && hh !== 12) hh += 12;
-      if (ap === 'am' && hh === 12) hh = 0;
-      const inicio = new Date(dia.getFullYear(), dia.getMonth(), dia.getDate(), hh, mm).getTime();
-
-      const temp = {
-        id: 'tmp_' + inicio + '_' + Math.random().toString(36).slice(2, 7),
-        titulo: cliente + ' - ' + servicio,
-        manicurista: manicurista.toLowerCase() === 'cualquiera' ? '' : manicurista.substring(0, 3),
-        cliente: cliente, servicio: servicio,
-        inicio: inicio, fin: inicio + duracion * 60000,
-        todoElDia: false, recurrente: false, ig: ig, pendiente: true
-      };
-      const pend = { k: claveDia(sede, fecha), ev: temp };
-      citasPendientes.push(pend);
-      const cache = diaCacheado(sede, fecha);
-      if (cache) cache.push(temp);
-
-      const quitarDePendientes = () => {
-        const i = citasPendientes.indexOf(pend);
-        if (i >= 0) citasPendientes.splice(i, 1);
-      };
-
-      // Libera el formulario al instante
-      mostrarToast('Agendando en ' + nombreSede(sede) + '...');
-      document.getElementById('nombreClienta').value = '';
-      document.getElementById('servicioInput').value = '';
-      setIGSeleccionado('');
-      const banner = document.getElementById('bannerSolicitud');
-      if (banner) banner.remove();
-      agregarServicioLocal(servicio);
-      horarioSeleccionado = null;
-      actualizarHorarios();
-
-      // Guarda en segundo plano
-      llamarAPI('crearCita', {
-        sede: sede, fecha: fecha, hora: hora, duracion: duracion,
-        numTrabajadores: numTrabajadores, manicurista: manicurista,
-        cliente: cliente, servicio: servicio, ig: ig
-      })
-        .then(r => {
-          if (!r || !r.ok) throw new Error((r && r.error) || 'desconocido');
-          Object.assign(temp, {
-            id: r.id, titulo: r.titulo, manicurista: (r.abrev || '').trim(),
-            inicio: r.inicio, fin: r.fin, pendiente: false
-          });
-          quitarDePendientes();
-          mostrarToast('Cita agendada ✓ ' + cliente + ' · ' + hora);
-        })
-        .catch(err => {
-          quitarDePendientes();
-          const arr = diaCacheado(sede, fecha);
-          if (arr) { const j = arr.indexOf(temp); if (j >= 0) arr.splice(j, 1); }
-          alert('No se pudo agendar a ' + cliente + ' (' + hora + ', ' + nombreSede(sede) + '):\n' + err.message);
-        })
-        .finally(() => refrescarTrasCambio(sede, [fecha]));
+    // ===================== CONFIRMAR (CITAS DE HOY) =====================
+    function pintarSedeConfirmar() {
+      document.querySelectorAll('#sedeAgendaControl .seg-btn')
+        .forEach(b => b.classList.toggle('active', b.dataset.sede === confSede));
     }
 
-    // ===================== CONFIRMAR (CITAS DE HOY) =====================
+    function cambiarSedeConfirmar(sede) {
+      if (sede === confSede) return;
+      confSede = sede;
+      localStorage.setItem('confSede', sede);
+      pintarSedeConfirmar();
+      cargarEventosHoy();
+    }
+
     function cargarEventosHoy(forzar) {
       const container = document.getElementById('eventosListContainer');
-      const sede = sedeReserva, fecha = fechaKeyLocal(new Date());
+      const sede = confSede, fecha = fechaKeyLocal(new Date());
       const cached = diaCacheado(sede, fecha);
 
       if (cached) pintarEventosHoy(cached);
@@ -1125,7 +919,7 @@
 
       obtenerDia(sede, fecha, forzar)
         .then(data => {
-          if (sede !== sedeReserva || !vistaActiva('agenda')) return;
+          if (sede !== confSede || !vistaActiva('agenda')) return;
           if (data !== cached) pintarEventosHoy(data);
         })
         .catch(err => { if (!cached) msgLista(container, 'Error: ' + err.message, 'empty-msg'); });
@@ -1134,7 +928,7 @@
     function pintarEventosHoy(data) {
       const container = document.getElementById('eventosListContainer');
       const eventos = data.filter(e => !e.todoElDia).slice().sort((a, b) => a.inicio - b.inicio);
-      if (!eventos.length) return msgLista(container, 'No hay citas para hoy en ' + nombreSede(sedeReserva), 'empty-msg');
+      if (!eventos.length) return msgLista(container, 'No hay citas para hoy en ' + nombreSede(confSede), 'empty-msg');
       container.innerHTML = '';
 
       eventos.forEach(ev => {
@@ -1156,7 +950,10 @@
         const btnMan = document.createElement('button');
         btnMan.className = 'btn-square';
         btnMan.textContent = (ev.manicurista || '').trim() || '···';
-        btnMan.onclick = () => abrirModalManicuristaEvento(ev, btnMan);
+        btnMan.onclick = () => {
+          if (ev.pendiente) return mostrarToast('La cita aún se está guardando');
+          abrirModalManicuristaEvento(ev, btnMan);
+        };
 
         const btnOk = document.createElement('button');
         btnOk.className = 'btn-square';
@@ -1194,7 +991,7 @@
 
     function asignarManicuristaAEvento(ev, nombre, btnRef) {
       cerrarModalManicuristaEvento();
-      const sede = sedeReserva;
+      const sede = confSede;
       const anterior = btnRef.textContent;
       btnRef.textContent = '…';
       llamarAPI('asignarManicurista', { sede: sede, eventId: ev.id, manicurista: nombre })
@@ -1230,7 +1027,7 @@
     }
 
     // ===================== CALENDARIO =====================
-    const CAL_HORA_INI = 9, CAL_HORA_FIN = 22, CAL_PX_HORA = 64, CAL_SNAP = 15;
+    const CAL_HORA_INI = 9, CAL_HORA_FIN = 22, CAL_PX_HORA = 64, CAL_SNAP = 15, CAL_TOQUE_MIN = 30;
     const CAL_COLORES = ['#007AFF', '#34C759', '#FF9500', '#AF52DE', '#FF2D55', '#5AC8FA', '#A2845E'];
     let calSede = localStorage.getItem('calSede') || 'miraflores';
     let calFecha = new Date(); calFecha.setHours(0, 0, 0, 0);
@@ -1241,7 +1038,6 @@
     let calScrollPendiente = false;
 
     const clonar = arr => arr.map(e => Object.assign({}, e));
-    function rangoHora(a, b) { return formatHora12(new Date(a)) + ' – ' + formatHora12(new Date(b)); }
     function etiquetaHora(h) { return (h % 12 || 12) + ' ' + (h >= 12 ? 'pm' : 'am'); }
     function minDesdeInicio(ms) { return (ms - calFecha.getTime()) / 60000 - CAL_HORA_INI * 60; }
     function colorManicurista(ab) {
@@ -1314,7 +1110,7 @@
     function actualizarLabelCal() {
       const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
       const diff = Math.round((calFecha - hoy) / 86400000);
-      let txt = diasSemana[calFecha.getDay()] + ' ' + calFecha.getDate() + ' ' + nombresMeses[calFecha.getMonth()];
+      let txt = fechaCorta(calFecha);
       if (diff === 0) txt = 'Hoy · ' + txt;
       else if (diff === 1) txt = 'Mañana · ' + txt;
       else if (diff === -1) txt = 'Ayer · ' + txt;
@@ -1372,6 +1168,16 @@
       cerrar();
     }
 
+    // Toque en un espacio libre → popup de nueva cita (ajustado a 30 min)
+    function manejarToqueVacio(e, capa) {
+      if (e.target !== capa || calArrastrando) return;
+      const y = e.clientY - capa.getBoundingClientRect().top;
+      const totalMin = (CAL_HORA_FIN - CAL_HORA_INI) * 60;
+      let min = Math.floor((y / CAL_PX_HORA * 60) / CAL_TOQUE_MIN) * CAL_TOQUE_MIN;
+      min = Math.max(0, Math.min(min, totalMin - CAL_TOQUE_MIN));
+      abrirNuevaCita(calFecha.getTime() + (CAL_HORA_INI * 60 + min) * 60000);
+    }
+
     function pintarCalendario() {
       const grid = document.getElementById('calGrid');
       grid.innerHTML = '';
@@ -1406,15 +1212,33 @@
         lb.style.top = y + 'px';
         lb.textContent = etiquetaHora(h);
         body.appendChild(lb);
+        if (h < CAL_HORA_FIN) {
+          const media = document.createElement('div');
+          media.className = 'cal-line media';
+          media.style.top = (y + CAL_PX_HORA / 2) + 'px';
+          body.appendChild(media);
+        }
       }
 
       const capa = document.createElement('div');
       capa.className = 'cal-eventos';
+      capa.addEventListener('click', e => manejarToqueVacio(e, capa));
       body.appendChild(capa);
 
       const timed = calEventos.filter(e => !e.todoElDia).sort((a, b) => a.inicio - b.inicio || b.fin - a.fin);
       asignarColumnas(timed);
       timed.forEach(ev => capa.appendChild(crearBloqueEvento(ev, totalMin)));
+
+      // Bloque azul del horario elegido (como Google Calendar)
+      if (nuevaCita && nuevaCita.sede === calSede && nuevaCita.fecha === fechaKeyLocal(calFecha)) {
+        const dur = duracionNueva();
+        const g = document.createElement('div');
+        g.className = 'cal-fantasma';
+        g.style.top = (minDesdeInicio(nuevaCita.inicio) / 60 * CAL_PX_HORA) + 'px';
+        g.style.height = (dur / 60 * CAL_PX_HORA - 2) + 'px';
+        g.textContent = rangoHora(nuevaCita.inicio, nuevaCita.inicio + dur * 60000);
+        capa.appendChild(g);
+      }
 
       if (fechaKeyLocal(new Date()) === fechaKeyLocal(calFecha)) {
         const min = minDesdeInicio(Date.now());
@@ -1430,14 +1254,14 @@
 
     function crearBloqueEvento(ev, totalMin) {
       const div = document.createElement('div');
-      div.className = 'cal-evento' + (ev.recurrente ? ' cal-evento-fijo' : '');
+      div.className = 'cal-evento' + (ev.recurrente ? ' cal-evento-fijo' : '') + (ev.pendiente ? ' cal-evento-pendiente' : '');
       const t = Math.max(0, minDesdeInicio(ev.inicio));
       const b = Math.min(totalMin, minDesdeInicio(ev.fin));
       div.style.top = (t / 60 * CAL_PX_HORA) + 'px';
       div.style.height = Math.max(22, (b - t) / 60 * CAL_PX_HORA - 2) + 'px';
       div.style.left = 'calc(' + (ev._col / ev._nCols * 100) + '% + 1px)';
       div.style.width = 'calc(' + (100 / ev._nCols) + '% - 3px)';
-      div.style.background = colorManicurista(ev.manicurista);
+      div.style.backgroundColor = colorManicurista(ev.manicurista);
       div.innerHTML = '<div class="cal-ev-t"></div><div class="cal-ev-s"></div>';
       div.children[0].textContent = (ev.manicurista ? '[' + ev.manicurista + '] ' : '') + ev.cliente;
       div.children[1].textContent = rangoHora(ev.inicio, ev.fin) + (ev.servicio ? ' · ' + ev.servicio : '');
@@ -1452,7 +1276,7 @@
       function inicio(y, x) {
         startY = y; startX = x; top0 = parseFloat(div.style.top);
         activo = false; movido = false; deltaMin = 0;
-                if (ev.recurrente || ev.pendiente) return;
+        if (ev.recurrente || ev.pendiente) return;
         timer = setTimeout(() => {
           activo = true;
           calArrastrando = true;
@@ -1536,9 +1360,13 @@
         ev.manicurista ? 'Manicurista: ' + ev.manicurista : ''
       ].filter(Boolean).join(' · ');
 
-            const bloqueado = ev.recurrente || ev.todoElDia || ev.pendiente;
+      const bloqueado = ev.recurrente || ev.todoElDia || ev.pendiente;
+      const aviso = document.getElementById('meAviso');
+      aviso.textContent = ev.pendiente
+        ? 'Esta cita se está guardando. Espera unos segundos para editarla.'
+        : 'Evento recurrente o de todo el día: edítalo desde Google Calendar.';
+      aviso.style.display = bloqueado ? 'block' : 'none';
       document.getElementById('meEditor').style.display = bloqueado ? 'none' : 'block';
-      document.getElementById('meAviso').style.display = bloqueado ? 'block' : 'none';
 
       if (!bloqueado) {
         const d = new Date(ev.inicio);
