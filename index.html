@@ -184,7 +184,7 @@
     }
     .tab-item {
       display: flex; flex-direction: column; align-items: center;
-      color: var(--text-muted); cursor: pointer; font-size: 16px; font-weight: 600; width: 50%;
+      color: var(--text-muted); cursor: pointer; font-size: 16px; font-weight: 600; flex: 1;
     }
     .tab-item.active { color: var(--apple-blue); }
 
@@ -194,6 +194,27 @@
       border-radius: 20px; font-size: 15px; font-weight: 500;
       transition: top 0.3s ease; z-index: 1000;
     }
+
+        .cal-nav { display:flex; align-items:center; gap:8px; margin-bottom:12px; }
+    .cal-nav-btn { background:#E3E3E8; border:none; width:40px; height:40px; border-radius:12px; font-size:22px; cursor:pointer; color:var(--text-main); }
+    .cal-hoy-btn { background:#E3E3E8; border:none; height:40px; padding:0 14px; border-radius:12px; font-size:14px; font-weight:600; cursor:pointer; color:var(--apple-blue); }
+    .cal-fecha-wrap { flex:1; position:relative; text-align:center; font-size:16px; font-weight:600; height:40px; line-height:40px; white-space:nowrap; overflow:hidden; }
+    #calFechaPicker { position:absolute; inset:0; opacity:0; width:100%; height:100%; }
+    .cal-grid { padding-right:8px; transition:opacity .2s; }
+    .cal-allday { padding:0 0 8px 52px; display:flex; flex-direction:column; gap:4px; }
+    .cal-allday-item { background:#8E8E93; color:#fff; border-radius:6px; padding:4px 8px; font-size:12px; font-weight:600; cursor:pointer; }
+    .cal-body { position:relative; margin-top:10px; }
+    .cal-line { position:absolute; left:48px; right:0; border-top:0.5px solid var(--border-color); }
+    .cal-hora { position:absolute; left:0; width:42px; text-align:right; font-size:11px; color:var(--text-muted); transform:translateY(-50%); }
+    .cal-eventos { position:absolute; top:0; bottom:0; left:52px; right:0; }
+    .cal-evento { position:absolute; border-radius:6px; padding:3px 6px; color:#fff; overflow:hidden; box-sizing:border-box; font-size:12px; line-height:1.25; cursor:pointer; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; transition:box-shadow .15s, transform .15s; }
+    .cal-evento.arrastrando { z-index:50; box-shadow:0 8px 20px rgba(0,0,0,.3); transform:scale(1.03); transition:none; }
+    .cal-evento-fijo { opacity:.7; }
+    .cal-ev-t { font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .cal-ev-s { opacity:.9; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .cal-now { position:absolute; left:0; right:0; border-top:2px solid #FF3B30; z-index:40; pointer-events:none; }
+    .cal-now::before { content:''; position:absolute; left:-5px; top:-6px; width:10px; height:10px; border-radius:50%; background:#FF3B30; }
+    .btn-danger { width:100%; margin-top:10px; background:#FFE5E5; color:#FF3B30; font-size:17px; font-weight:600; padding:14px; border:none; border-radius:12px; cursor:pointer; }
   </style>
 </head>
 <body>
@@ -202,6 +223,24 @@
 
   <div class="view-container">
     <div id="view-agenda" class="view">
+          <div id="view-calendario" class="view">
+      <div class="booking-content" style="padding-bottom:0;">
+        <div class="segmented-control" id="sedeControl" style="margin-bottom:12px;">
+          <button class="seg-btn" data-sede="miraflores" onclick="cambiarSede('miraflores')">Miraflores</button>
+          <button class="seg-btn" data-sede="surco" onclick="cambiarSede('surco')">Surco</button>
+        </div>
+        <div class="cal-nav">
+          <button class="cal-nav-btn" onclick="moverDia(-1)">‹</button>
+          <div class="cal-fecha-wrap">
+            <span id="calFechaLabel"></span>
+            <input type="date" id="calFechaPicker" onchange="elegirFechaCal(this)">
+          </div>
+          <button class="cal-nav-btn" onclick="moverDia(1)">›</button>
+          <button class="cal-hoy-btn" onclick="irHoy()">Hoy</button>
+        </div>
+      </div>
+      <div id="calGrid" class="cal-grid"></div>
+    </div>
       <div class="booking-content">
         <div class="title" style="margin-bottom:20px;">Citas de hoy</div>
         <div id="eventosListContainer">
@@ -347,6 +386,38 @@
     </div>
   </div>
 
+    <div id="modalEvento" class="modal-overlay" onclick="if(event.target===this)cerrarModalEvento()">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        Cita
+        <button class="close-btn" onclick="cerrarModalEvento()">Cerrar</button>
+      </div>
+      <div style="padding:16px; overflow-y:auto; min-height:0;">
+        <div id="meTitulo" style="font-size:20px; font-weight:700;"></div>
+        <div id="meSub" style="color:var(--text-muted); font-size:14px; margin:4px 0 16px;"></div>
+        <div id="meAviso" style="display:none; background:#F2F2F7; border-radius:12px; padding:12px; font-size:14px; color:var(--text-muted);">
+          Evento recurrente o de todo el día: edítalo desde Google Calendar.
+        </div>
+        <div id="meEditor">
+          <label class="field-label">Fecha</label>
+          <input type="date" id="meFecha" class="client-input" style="width:100%; box-sizing:border-box;">
+          <div style="display:flex; gap:12px; margin-top:12px;">
+            <div style="flex:1;">
+              <label class="field-label">Hora</label>
+              <input type="time" id="meHora" step="900" class="client-input" style="width:100%; box-sizing:border-box;">
+            </div>
+            <div style="flex:1;">
+              <label class="field-label">Duración</label>
+              <select id="meDuracion" class="duracion-select"></select>
+            </div>
+          </div>
+          <button class="btn-primary" style="margin-top:16px;" onclick="guardarEdicionEvento()">Guardar cambios</button>
+          <button class="btn-danger" onclick="borrarEventoActual()">Eliminar cita</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="tab-bar">
     <div class="tab-item active" id="tab-booking" onclick="switchTab('booking')">Reserva</div>
     <div class="tab-item" id="tab-agenda" onclick="switchTab('agenda')">Confirmar</div>
@@ -469,16 +540,12 @@
     }
 
     function switchTab(tab) {
-      document.getElementById('view-agenda').classList.remove('active');
-      document.getElementById('view-booking').classList.remove('active');
-      document.getElementById('tab-agenda').classList.remove('active');
-      document.getElementById('tab-booking').classList.remove('active');
-      document.getElementById('view-' + tab).classList.add('active');
-      document.getElementById('tab-' + tab).classList.add('active');
-
-      if (tab === 'agenda') {
-        cargarEventosHoy();
-      }
+      ['booking', 'agenda', 'calendario'].forEach(t => {
+        document.getElementById('view-' + t).classList.toggle('active', t === tab);
+        document.getElementById('tab-' + t).classList.toggle('active', t === tab);
+      });
+      if (tab === 'agenda') cargarEventosHoy();
+      if (tab === 'calendario') initCalendario();
     }
 
     function selectDateType(type, element) {
@@ -1070,12 +1137,9 @@
 
     function ajustarEspacioInferior() {
       const tabBar = document.querySelector('.tab-bar');
-      const alturaBarra = tabBar ? tabBar.offsetHeight : 90;
-      const espacio = (alturaBarra + 24) + 'px';
-      document.getElementById('view-booking').style.paddingBottom = espacio;
-      document.getElementById('view-agenda').style.paddingBottom = espacio;
+      const espacio = ((tabBar ? tabBar.offsetHeight : 90) + 24) + 'px';
+      document.querySelectorAll('.view').forEach(v => v.style.paddingBottom = espacio);
     }
-
     function activarNotificaciones() {
       window.OneSignalDeferred = window.OneSignalDeferred || [];
       OneSignalDeferred.push(async function(OneSignal) {
@@ -1087,6 +1151,328 @@
         }
       });
     }
+
+      // ===== CALENDARIO =====
+    const CAL_HORA_INI = 9, CAL_HORA_FIN = 22, CAL_PX_HORA = 64, CAL_SNAP = 15;
+    const CAL_COLORES = ['#007AFF', '#34C759', '#FF9500', '#AF52DE', '#FF2D55', '#5AC8FA', '#A2845E'];
+    const diasSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+    let calSede = localStorage.getItem('calSede') || 'miraflores';
+    let calFecha = new Date(); calFecha.setHours(0, 0, 0, 0);
+    let calEventos = [];
+    let calReq = 0;
+    let calEventoActual = null;
+
+    function fechaKeyLocal(d) {
+      return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+    function formatHora12(d) {
+      let h = d.getHours(), m = d.getMinutes(), ap = h >= 12 ? 'pm' : 'am';
+      h = h % 12 || 12;
+      return h + (m ? ':' + String(m).padStart(2, '0') : '') + ap;
+    }
+    function rangoHora(a, b) { return formatHora12(new Date(a)) + ' – ' + formatHora12(new Date(b)); }
+    function etiquetaHora(h) { return (h % 12 || 12) + ' ' + (h >= 12 ? 'pm' : 'am'); }
+    function minDesdeInicio(ms) { return (ms - calFecha.getTime()) / 60000 - CAL_HORA_INI * 60; }
+    function colorManicurista(ab) {
+      ab = (ab || '').trim();
+      if (!ab) return '#8E8E93';
+      let h = 0;
+      for (const c of ab) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+      return CAL_COLORES[h % CAL_COLORES.length];
+    }
+
+    function initCalendario() {
+      document.querySelectorAll('#sedeControl .seg-btn').forEach(b => b.classList.toggle('active', b.dataset.sede === calSede));
+      cargarCalendario();
+    }
+    function cambiarSede(sede) { calSede = sede; localStorage.setItem('calSede', sede); initCalendario(); }
+    function moverDia(n) { calFecha.setDate(calFecha.getDate() + n); cargarCalendario(); }
+    function irHoy() { calFecha = new Date(); calFecha.setHours(0, 0, 0, 0); cargarCalendario(); }
+    function elegirFechaCal(input) {
+      if (!input.value) return;
+      const p = input.value.split('-');
+      calFecha = new Date(p[0], p[1] - 1, p[2]);
+      cargarCalendario();
+    }
+
+    function actualizarLabelCal() {
+      const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+      const diff = Math.round((calFecha - hoy) / 86400000);
+      let txt = diasSemana[calFecha.getDay()] + ' ' + calFecha.getDate() + ' ' + nombresMeses[calFecha.getMonth()];
+      if (diff === 0) txt = 'Hoy · ' + txt;
+      else if (diff === 1) txt = 'Mañana · ' + txt;
+      else if (diff === -1) txt = 'Ayer · ' + txt;
+      document.getElementById('calFechaLabel').innerText = txt;
+      document.getElementById('calFechaPicker').value = fechaKeyLocal(calFecha);
+    }
+
+    function cargarCalendario() {
+      actualizarLabelCal();
+      const req = ++calReq;
+      const grid = document.getElementById('calGrid');
+      calEventos = [];
+      pintarCalendario();
+      grid.style.opacity = '0.5';
+
+      llamarAPI('eventosDia', { sede: calSede, fecha: fechaKeyLocal(calFecha) })
+        .then(data => {
+          if (req !== calReq) return;
+          grid.style.opacity = '1';
+          if (!Array.isArray(data)) { mostrarToast('Error: ' + ((data && data.error) || 'desconocido')); return; }
+          calEventos = data;
+          pintarCalendario();
+        })
+        .catch(err => {
+          if (req !== calReq) return;
+          grid.style.opacity = '1';
+          mostrarToast('Error: ' + err.message);
+        });
+    }
+
+    function asignarColumnas(evs) {
+      let cluster = [], cols = [], clusterFin = 0;
+      const cerrar = () => { cluster.forEach(e => e._nCols = cols.length); cluster = []; cols = []; clusterFin = 0; };
+      evs.forEach(ev => {
+        if (cluster.length && ev.inicio >= clusterFin) cerrar();
+        let c = cols.findIndex(f => f <= ev.inicio);
+        if (c === -1) { c = cols.length; cols.push(ev.fin); } else cols[c] = ev.fin;
+        ev._col = c;
+        cluster.push(ev);
+        clusterFin = Math.max(clusterFin, ev.fin);
+      });
+      cerrar();
+    }
+
+    function pintarCalendario() {
+      const grid = document.getElementById('calGrid');
+      grid.innerHTML = '';
+      const totalMin = (CAL_HORA_FIN - CAL_HORA_INI) * 60;
+
+      const todoDia = calEventos.filter(e => e.todoElDia);
+      if (todoDia.length) {
+        const bar = document.createElement('div');
+        bar.className = 'cal-allday';
+        todoDia.forEach(ev => {
+          const c = document.createElement('div');
+          c.className = 'cal-allday-item';
+          c.textContent = ev.titulo;
+          c.onclick = () => abrirModalEvento(ev);
+          bar.appendChild(c);
+        });
+        grid.appendChild(bar);
+      }
+
+      const body = document.createElement('div');
+      body.className = 'cal-body';
+      body.style.height = (totalMin / 60 * CAL_PX_HORA) + 'px';
+
+      for (let h = CAL_HORA_INI; h <= CAL_HORA_FIN; h++) {
+        const y = (h - CAL_HORA_INI) * CAL_PX_HORA;
+        const line = document.createElement('div');
+        line.className = 'cal-line';
+        line.style.top = y + 'px';
+        body.appendChild(line);
+        const lb = document.createElement('div');
+        lb.className = 'cal-hora';
+        lb.style.top = y + 'px';
+        lb.textContent = etiquetaHora(h);
+        body.appendChild(lb);
+      }
+
+      const capa = document.createElement('div');
+      capa.className = 'cal-eventos';
+      body.appendChild(capa);
+
+      const timed = calEventos.filter(e => !e.todoElDia).sort((a, b) => a.inicio - b.inicio || b.fin - a.fin);
+      asignarColumnas(timed);
+      timed.forEach(ev => capa.appendChild(crearBloqueEvento(ev, totalMin)));
+
+      if (fechaKeyLocal(new Date()) === fechaKeyLocal(calFecha)) {
+        const min = minDesdeInicio(Date.now());
+        if (min >= 0 && min <= totalMin) {
+          const n = document.createElement('div');
+          n.className = 'cal-now';
+          n.style.top = (min / 60 * CAL_PX_HORA) + 'px';
+          capa.appendChild(n);
+        }
+      }
+      grid.appendChild(body);
+    }
+
+    function crearBloqueEvento(ev, totalMin) {
+      const div = document.createElement('div');
+      div.className = 'cal-evento' + (ev.recurrente ? ' cal-evento-fijo' : '');
+      const t = Math.max(0, minDesdeInicio(ev.inicio));
+      const b = Math.min(totalMin, minDesdeInicio(ev.fin));
+      div.style.top = (t / 60 * CAL_PX_HORA) + 'px';
+      div.style.height = Math.max(22, (b - t) / 60 * CAL_PX_HORA - 2) + 'px';
+      div.style.left = 'calc(' + (ev._col / ev._nCols * 100) + '% + 1px)';
+      div.style.width = 'calc(' + (100 / ev._nCols) + '% - 3px)';
+      div.style.background = colorManicurista(ev.manicurista);
+      div.innerHTML = '<div class="cal-ev-t"></div><div class="cal-ev-s"></div>';
+      div.children[0].textContent = (ev.manicurista ? '[' + ev.manicurista + '] ' : '') + ev.cliente;
+      div.children[1].textContent = rangoHora(ev.inicio, ev.fin) + (ev.servicio ? ' · ' + ev.servicio : '');
+      activarArrastre(div, ev);
+      return div;
+    }
+
+    // Toque = abrir detalle · Mantener presionado 350ms y arrastrar = mover
+    function activarArrastre(div, ev) {
+      let timer = null, startY = 0, startX = 0, top0 = 0, activo = false, movido = false, deltaMin = 0;
+
+      function inicio(y, x) {
+        startY = y; startX = x; top0 = parseFloat(div.style.top);
+        activo = false; movido = false; deltaMin = 0;
+        if (ev.recurrente) return;
+        timer = setTimeout(() => {
+          activo = true;
+          div.classList.add('arrastrando');
+          if (navigator.vibrate) navigator.vibrate(15);
+        }, 350);
+      }
+      function mover(y, x, e) {
+        if (!activo) {
+          if (Math.abs(y - startY) > 8 || Math.abs(x - startX) > 8) { movido = true; clearTimeout(timer); }
+          return;
+        }
+        e.preventDefault();
+        deltaMin = Math.round(((y - startY) / CAL_PX_HORA * 60) / CAL_SNAP) * CAL_SNAP;
+        div.style.top = (top0 + deltaMin / 60 * CAL_PX_HORA) + 'px';
+        div.children[1].textContent = rangoHora(ev.inicio + deltaMin * 60000, ev.fin + deltaMin * 60000);
+      }
+      function fin() {
+        clearTimeout(timer);
+        if (activo) {
+          activo = false;
+          div.classList.remove('arrastrando');
+          if (deltaMin !== 0) guardarMovimiento(ev, ev.inicio + deltaMin * 60000, ev.fin + deltaMin * 60000);
+          return;
+        }
+        if (!movido) abrirModalEvento(ev);
+      }
+
+      div.addEventListener('touchstart', e => inicio(e.touches[0].clientY, e.touches[0].clientX), { passive: true });
+      div.addEventListener('touchmove', e => mover(e.touches[0].clientY, e.touches[0].clientX, e), { passive: false });
+      div.addEventListener('touchend', e => { e.preventDefault(); fin(); });
+      div.addEventListener('touchcancel', () => {
+        clearTimeout(timer);
+        if (activo) { activo = false; pintarCalendario(); }
+      });
+      div.addEventListener('mousedown', e => {
+        inicio(e.clientY, e.clientX);
+        const mm = e2 => mover(e2.clientY, e2.clientX, e2);
+        const mu = () => {
+          document.removeEventListener('mousemove', mm);
+          document.removeEventListener('mouseup', mu);
+          fin();
+        };
+        document.addEventListener('mousemove', mm);
+        document.addEventListener('mouseup', mu);
+      });
+    }
+
+    function guardarMovimiento(ev, nuevoIni, nuevoFin) {
+      const prevIni = ev.inicio, prevFin = ev.fin;
+      ev.inicio = nuevoIni;
+      ev.fin = nuevoFin;
+      if (fechaKeyLocal(new Date(nuevoIni)) !== fechaKeyLocal(calFecha)) {
+        calEventos = calEventos.filter(e => e !== ev);
+      }
+      pintarCalendario();
+
+      llamarAPI('moverEvento', { sede: calSede, eventId: ev.id, inicio: nuevoIni, fin: nuevoFin })
+        .then(r => {
+          if (!r || !r.ok) throw new Error((r && r.error) || 'desconocido');
+          mostrarToast('Cita actualizada ✓');
+          eventosHoyList = null;
+          if (calSede === 'miraflores') actualizarHorarios();
+        })
+        .catch(err => {
+          ev.inicio = prevIni;
+          ev.fin = prevFin;
+          alert('No se pudo actualizar: ' + err.message);
+          cargarCalendario();
+        });
+    }
+
+    function abrirModalEvento(ev) {
+      calEventoActual = ev;
+      document.getElementById('meTitulo').textContent = ev.cliente;
+      document.getElementById('meSub').textContent = [
+        ev.todoElDia ? 'Todo el día' : rangoHora(ev.inicio, ev.fin),
+        ev.servicio,
+        ev.manicurista ? 'Manicurista: ' + ev.manicurista : ''
+      ].filter(Boolean).join(' · ');
+
+      const bloqueado = ev.recurrente || ev.todoElDia;
+      document.getElementById('meEditor').style.display = bloqueado ? 'none' : 'block';
+      document.getElementById('meAviso').style.display = bloqueado ? 'block' : 'none';
+
+      if (!bloqueado) {
+        const d = new Date(ev.inicio);
+        document.getElementById('meFecha').value = fechaKeyLocal(d);
+        document.getElementById('meHora').value = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+
+        const dur = Math.round((ev.fin - ev.inicio) / 60000);
+        const opciones = [15, 30, 45, 60, 90, 120, 150, 180, 240];
+        if (!opciones.includes(dur)) opciones.push(dur);
+        opciones.sort((a, b) => a - b);
+
+        const sel = document.getElementById('meDuracion');
+        sel.innerHTML = '';
+        opciones.forEach(m => {
+          const o = document.createElement('option');
+          o.value = m;
+          o.textContent = m < 60 ? m + ' min' : (m / 60) + ' h';
+          if (m === dur) o.selected = true;
+          sel.appendChild(o);
+        });
+      }
+      document.getElementById('modalEvento').classList.add('active');
+    }
+
+    function cerrarModalEvento() {
+      document.getElementById('modalEvento').classList.remove('active');
+    }
+
+    function guardarEdicionEvento() {
+      const ev = calEventoActual;
+      if (!ev) return;
+      const f = document.getElementById('meFecha').value;
+      const h = document.getElementById('meHora').value;
+      if (!f || !h) { alert('Completa fecha y hora'); return; }
+
+      const [y, mo, d] = f.split('-').map(Number);
+      const [hh, mm] = h.split(':').map(Number);
+      const ini = new Date(y, mo - 1, d, hh, mm).getTime();
+      const fin = ini + parseInt(document.getElementById('meDuracion').value, 10) * 60000;
+
+      cerrarModalEvento();
+      guardarMovimiento(ev, ini, fin);
+    }
+
+    function borrarEventoActual() {
+      const ev = calEventoActual;
+      if (!ev || !confirm('¿Eliminar la cita de ' + ev.cliente + '?')) return;
+
+      cerrarModalEvento();
+      calEventos = calEventos.filter(e => e !== ev);
+      pintarCalendario();
+
+      llamarAPI('borrarEvento', { sede: calSede, eventId: ev.id })
+        .then(r => {
+          if (!r || !r.ok) throw new Error((r && r.error) || 'desconocido');
+          mostrarToast('Cita eliminada');
+          eventosHoyList = null;
+          if (calSede === 'miraflores') actualizarHorarios();
+        })
+        .catch(err => {
+          alert('No se pudo eliminar: ' + err.message);
+          cargarCalendario();
+        });
+    }
+
+    
   </script>
 </body>
 </html>
