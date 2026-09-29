@@ -261,6 +261,7 @@
       .tab-item { padding: 12px 0; }
       .modal-sheet { max-height: 95%; }
     }
+        .cal-error { display: none; margin-top: 8px; background: #FFE5E5; color: var(--danger); border-radius: 10px; padding: 10px 12px; font-size: 13px; font-weight: 600; text-align: center; cursor: pointer; }
   </style>
 </head>
 <body>
@@ -288,7 +289,8 @@
           <button class="cal-nav-btn" onclick="cambiarDiaAnimado(1)" aria-label="Día siguiente">›</button>
           <button class="cal-hoy-btn" onclick="irHoy()">Hoy</button>
         </div>
-        <div class="cal-ayuda">Toca o mantén presionado un horario para agendar · Mantén presionada una cita para moverla</div>
+                <div class="cal-ayuda">Toca o mantén presionado un horario para agendar · Mantén presionada una cita para moverla</div>
+        <div id="calError" class="cal-error" onclick="cargarCalendario(true)"></div>
       </div>
       <div id="calGrid" class="cal-grid"></div>
     </div>
@@ -455,10 +457,23 @@
         .map(k => encodeURIComponent(k) + '=' + encodeURIComponent(params[k]))
         .join('&');
       const url = APPS_SCRIPT_URL + '?action=' + encodeURIComponent(action) + (query ? '&' + query : '');
-            return fetch(url, { cache: 'no-store', keepalive: !!keepalive }).then(res => {
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        return res.json();
-      });
+                const ctrl = window.AbortController ? new AbortController() : null;
+      const timer = ctrl ? setTimeout(() => ctrl.abort(), 25000) : null;
+      return fetch(url, {
+        cache: 'no-store',
+        credentials: 'omit',   // no manda la cuenta de Google del teléfono
+        redirect: 'follow',
+        keepalive: !!keepalive,
+        signal: ctrl ? ctrl.signal : undefined
+      })
+        .then(res => {
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          return res.json();
+        })
+        .catch(err => {
+          throw new Error(err.name === 'AbortError' ? 'El servidor tardó demasiado' : (err.message || 'Error de conexión'));
+        })
+        .finally(() => { if (timer) clearTimeout(timer); });
     }
 
     const nombreSede = s => s === 'surco' ? 'Surco' : 'Miraflores';
@@ -601,7 +616,10 @@
         });
       });
 
-            pintarSedeConfirmar();
+            if (new Date().getTimezoneOffset() !== 300) {
+        alert('La zona horaria de este teléfono no es la de Lima y las citas pueden verse en horas equivocadas.\n\nActiva: Ajustes → General → Fecha y hora → Ajuste automático.');
+      }
+      pintarSedeConfirmar();
       restaurarOutbox();
       window.addEventListener('online', reintentarPendientes);
       cargarInit();
@@ -1205,6 +1223,13 @@
       });
     }
 
+        function mostrarErrorCal(msg) {
+      const box = document.getElementById('calError');
+      if (!msg) { box.style.display = 'none'; return; }
+      box.textContent = 'No se pudieron cargar las citas: ' + msg + ' · Toca aquí para reintentar';
+      box.style.display = 'block';
+    }
+    
     function cargarCalendario(forzar) {
       actualizarLabelCal();
       const req = ++calReq, sede = calSede, fecha = fechaKeyLocal(calFecha);
@@ -1218,8 +1243,9 @@
 
       obtenerDia(sede, fecha, forzar)
         .then(data => {
-          if (req !== calReq) return;
+                    if (req !== calReq) return;
           grid.style.opacity = '1';
+          mostrarErrorCal('');
           if (data !== cached && !calArrastrando) {
             calEventos = clonar(data);
             pintarCalendario();
@@ -1229,7 +1255,7 @@
         .catch(err => {
           if (req !== calReq) return;
           grid.style.opacity = '1';
-          mostrarToast('Error: ' + err.message);
+                    mostrarErrorCal(err.message);
         });
     }
 
