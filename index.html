@@ -211,7 +211,8 @@
     .cal-line { position: absolute; left: 48px; right: 0; border-top: 0.5px solid var(--border-color); }
     .cal-line.media { border-top-style: dashed; opacity: .6; }
     .cal-hora { position: absolute; left: 0; width: 42px; text-align: right; font-size: 11px; color: var(--text-muted); transform: translateY(-50%); }
-    .cal-eventos { position: absolute; top: 0; bottom: 0; left: 52px; right: 0; cursor: pointer; }
+        .cal-eventos { position: absolute; top: 0; bottom: 0; left: 52px; right: 0; cursor: pointer; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+    .cal-fantasma.arrastrando { background: rgba(0,122,255,.25); box-shadow: 0 8px 20px rgba(0,122,255,.35); }
     .cal-evento {
       position: absolute; border-radius: 6px; padding: 3px 6px; color: #fff; overflow: hidden;
       font-size: 12px; line-height: 1.25; cursor: pointer;
@@ -257,7 +258,7 @@
           <button class="cal-nav-btn" onclick="cambiarDiaAnimado(1)" aria-label="Día siguiente">›</button>
           <button class="cal-hoy-btn" onclick="irHoy()">Hoy</button>
         </div>
-        <div class="cal-ayuda">Toca un horario para agendar · Mantén presionada una cita para moverla</div>
+        <div class="cal-ayuda">Toca o mantén presionado un horario para agendar · Mantén presionada una cita para moverla</div>
       </div>
       <div id="calGrid" class="cal-grid"></div>
     </div>
@@ -1178,6 +1179,66 @@
       abrirNuevaCita(calFecha.getTime() + (CAL_HORA_INI * 60 + min) * 60000);
     }
 
+        // Mantener presionado un espacio libre → aparece el bloque, se arrastra y al soltar se abre el popup
+    function activarCrearArrastrando(capa) {
+      const totalMin = (CAL_HORA_FIN - CAL_HORA_INI) * 60;
+      let timer = null, activo = false, y0 = 0, x0 = 0, min0 = 0, minActual = 0, ghost = null;
+
+      const inicioMs = () => calFecha.getTime() + (CAL_HORA_INI * 60 + minActual) * 60000;
+      const pintarGhost = () => {
+        const dur = duracionNueva();
+        ghost.style.top = (minActual / 60 * CAL_PX_HORA) + 'px';
+        ghost.style.height = (dur / 60 * CAL_PX_HORA - 2) + 'px';
+        ghost.textContent = rangoHora(inicioMs(), inicioMs() + dur * 60000);
+      };
+
+      capa.addEventListener('contextmenu', e => e.preventDefault());
+
+      capa.addEventListener('touchstart', e => {
+        if (e.target !== capa || e.touches.length !== 1) return;
+        const t = e.touches[0];
+        y0 = t.clientY; x0 = t.clientX;
+        const y = y0 - capa.getBoundingClientRect().top;
+        min0 = Math.floor((y / CAL_PX_HORA * 60) / CAL_TOQUE_MIN) * CAL_TOQUE_MIN;
+        min0 = Math.max(0, Math.min(min0, totalMin - CAL_TOQUE_MIN));
+        minActual = min0;
+
+        timer = setTimeout(() => {
+          activo = true;
+          calArrastrando = true;
+          ghost = document.createElement('div');
+          ghost.className = 'cal-fantasma arrastrando';
+          capa.appendChild(ghost);
+          pintarGhost();
+          if (navigator.vibrate) navigator.vibrate(15);
+        }, 350);
+      }, { passive: true });
+
+      capa.addEventListener('touchmove', e => {
+        const t = e.touches[0];
+        if (!activo) {
+          if (Math.abs(t.clientY - y0) > 8 || Math.abs(t.clientX - x0) > 8) clearTimeout(timer);
+          return;
+        }
+        e.preventDefault();
+        const delta = Math.round(((t.clientY - y0) / CAL_PX_HORA * 60) / CAL_SNAP) * CAL_SNAP;
+        const nuevo = Math.max(0, Math.min(min0 + delta, totalMin - CAL_SNAP));
+        if (nuevo !== minActual) { minActual = nuevo; pintarGhost(); }
+      }, { passive: false });
+
+      const terminar = (e, abrir) => {
+        clearTimeout(timer);
+        if (!activo) return;
+        if (e.cancelable) e.preventDefault();
+        activo = false;
+        setTimeout(() => { calArrastrando = false; }, 0);
+        if (abrir) abrirNuevaCita(inicioMs());
+        else pintarCalendario();
+      };
+      capa.addEventListener('touchend', e => terminar(e, true));
+      capa.addEventListener('touchcancel', e => terminar(e, false));
+    }
+    
     function pintarCalendario() {
       const grid = document.getElementById('calGrid');
       grid.innerHTML = '';
@@ -1222,7 +1283,8 @@
 
       const capa = document.createElement('div');
       capa.className = 'cal-eventos';
-      capa.addEventListener('click', e => manejarToqueVacio(e, capa));
+            capa.addEventListener('click', e => manejarToqueVacio(e, capa));
+      activarCrearArrastrando(capa);
       body.appendChild(capa);
 
       const timed = calEventos.filter(e => !e.todoElDia).sort((a, b) => a.inicio - b.inicio || b.fin - a.fin);
