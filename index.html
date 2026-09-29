@@ -247,6 +247,7 @@
     .cal-now::before { content: ''; position: absolute; left: -5px; top: -6px; width: 10px; height: 10px; border-radius: 50%; background: var(--danger); }
     .cal-ayuda { font-size: 12px; color: var(--text-muted); text-align: center; margin-bottom: 4px; }
 
+    .cal-header { position: sticky; top: 0; z-index: 70; background: var(--bg-color); padding-bottom: 8px; box-shadow: 0 0.5px 0 var(--border-color); }
     #meAviso { display: none; background: var(--bg-color); border-radius: 12px; padding: 12px; font-size: 14px; color: var(--text-muted); }
   </style>
 </head>
@@ -343,7 +344,7 @@
 
     <!-- ===== CALENDARIO ===== -->
     <div id="view-calendario" class="view">
-      <div class="booking-content">
+      <div class="booking-content cal-header">
         <div class="segmented-control sede-control" id="sedeControl" style="margin-bottom:12px;">
           <button class="seg-btn" data-sede="miraflores" onclick="cambiarSede('miraflores')">Miraflores</button>
           <button class="seg-btn" data-sede="surco" onclick="cambiarSede('surco')">Surco</button>
@@ -441,6 +442,7 @@
     const nombresMeses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
     const diasSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
+    let HORARIO = leerJSON('horario') || { inicio: 11, fin: 21, finDomingo: 17 };
     let sedeReserva = localStorage.getItem('sedeReserva') || 'miraflores';
     let numTrabajadores = leerNumTrabajadores();
     let selectedDateType = 'hoy';
@@ -449,23 +451,25 @@
     let duracionMinutos = 90;
     let horarioSeleccionado = null;
     let horariosReq = 0;
-    let buscandoHorarios = false;
 
-    let igHandles = [];
+    let igHandles = leerJSON('igCache') || [];
     let igLoaded = false;
     let igLoading = false;
     let igSeleccionado = '';
 
-    let serviciosList = [];
-    let serviciosLoading = false;
     let manicuristasList = [];
-
-    let eventosHoyList = null;
-    let eventosHoyLoading = false;
+    let serviciosList = [];
 
     let toastTimer = null;
 
     // ===================== UTILIDADES =====================
+    function leerJSON(k) {
+      try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; }
+    }
+    function guardarJSON(k, v) {
+      try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {}
+    }
+
     function llamarAPI(action, params) {
       params = params || {};
       const query = Object.keys(params)
@@ -483,10 +487,21 @@
     }
 
     const nombreSede = s => s === 'surco' ? 'Surco' : 'Miraflores';
+    const otraSede = s => s === 'surco' ? 'miraflores' : 'surco';
     const vistaActiva = id => document.getElementById('view-' + id).classList.contains('active');
 
     function fechaKeyLocal(d) {
       return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+    function formatHora12(d) {
+      let h = d.getHours(), m = d.getMinutes(), ap = h >= 12 ? 'pm' : 'am';
+      h = h % 12 || 12;
+      return h + (m ? ':' + String(m).padStart(2, '0') : '') + ap;
+    }
+    function formatHoraBoton(d) {
+      let h = d.getHours(), m = d.getMinutes(), ap = h >= 12 ? 'pm' : 'am';
+      h = h % 12 || 12;
+      return h + ':' + String(m).padStart(2, '0') + ' ' + ap;
     }
 
     function copiarTexto(texto) {
@@ -540,6 +555,70 @@
       document.querySelectorAll('.view').forEach(v => v.style.paddingBottom = espacio);
     }
 
+    // ===================== CACHÉ DE DÍAS (una sola fuente para todo) =====================
+    // Muestra al instante lo guardado y actualiza en segundo plano.
+    const DIA_FRESCO_MS = 30000;
+    const diaCache = new Map();
+    let diaSeq = 0;
+
+    const claveDia = (sede, fecha) => sede + '_' + fecha;
+
+    function diaCacheado(sede, fecha) {
+      const e = diaCache.get(claveDia(sede, fecha));
+      return e && e.data ? e.data : null;
+    }
+
+    function marcarTodoViejo() {
+      diaCache.forEach(e => { e.t = 0; });
+    }
+
+    function obtenerDia(sede, fecha, forzar) {
+      const k = claveDia(sede, fecha);
+      const e = diaCache.get(k) || {};
+      if (!forzar && e.data && Date.now() - e.t < DIA_FRESCO_MS) return Promise.resolve(e.data);
+      if (!forzar && e.promesa) return e.promesa;
+
+      const seq = ++diaSeq;
+      const p = llamarAPI('eventosDia', { sede: sede, fecha: fecha }).then(data => {
+        if (!Array.isArray(data)) throw new Error((data && data.error) || 'Respuesta inválida');
+        const cur = diaCache.get(k) || {};
+        if (!cur.data || seq > (cur.seq || 0)) {
+          cur.data = data;
+          cur.t = Date.now();
+          cur.seq = seq;
+        }
+        if (cur.promesa === p) cur.promesa = null;
+        diaCache.set(k, cur);
+        return cur.data;
+      }, err => {
+        const cur = diaCache.get(k);
+        if (cur && cur.promesa === p) cur.promesa = null;
+        throw err;
+      });
+
+      e.promesa = p;
+      diaCache.set(k, e);
+      return p;
+    }
+
+    function precargarDias() {
+      const hoy = new Date();
+      const man = new Date(); man.setDate(man.getDate() + 1);
+      [sedeReserva, otraSede(sedeReserva)].forEach(s => {
+        [hoy, man].forEach(d => obtenerDia(s, fechaKeyLocal(d)).catch(() => {}));
+      });
+    }
+
+    // Tras crear/mover/borrar: recarga esos días y refresca las vistas afectadas
+    function refrescarTrasCambio(sede, fechas) {
+      Promise.all(fechas.map(f => obtenerDia(sede, f, true).catch(() => {}))).then(() => {
+        if (sede === sedeReserva) {
+          actualizarHorarios();
+          if (vistaActiva('agenda')) cargarEventosHoy();
+        }
+      });
+    }
+
     // ===================== INICIO =====================
     window.onload = function() {
       precargarClientaDesdeURL();
@@ -555,26 +634,27 @@
 
       pintarSedeReserva();
       actualizarBotonConfigLabel();
-      cargarClientesIG();
-      cargarManicuristas();
-      cargarServicios();
-      cargarEventosHoy();
+      cargarInit();
       actualizarHorarios();
+      precargarDias();
       activarSwipeCalendario();
       ajustarEspacioInferior();
       window.addEventListener('resize', ajustarEspacioInferior);
+      setTimeout(() => cargarClientesIG(), 1500);
 
-      // Al volver a la app: refresca (oculta horarios que ya pasaron)
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState !== 'visible') return;
-        if (!horarioSeleccionado) actualizarHorarios();
-        eventosHoyList = null;
+        marcarTodoViejo();
+        cargarInit();
+        actualizarHorarios();
         if (vistaActiva('agenda')) cargarEventosHoy();
         if (vistaActiva('calendario')) cargarCalendario();
       });
+
+      // Cada 2 min: quita horarios que ya pasaron y trae cambios nuevos
       setInterval(() => {
-        if (document.visibilityState === 'visible' && !horarioSeleccionado) actualizarHorarios();
-      }, 5 * 60 * 1000);
+        if (document.visibilityState === 'visible') actualizarHorarios();
+      }, 2 * 60 * 1000);
     };
 
     function switchTab(tab) {
@@ -585,6 +665,53 @@
       document.querySelector('.view-container').scrollTop = 0;
       if (tab === 'agenda') cargarEventosHoy();
       if (tab === 'calendario') initCalendario();
+    }
+
+    // ===================== DATOS INICIALES =====================
+    function cargarInit() {
+      const guardado = leerJSON('initCache');
+      if (guardado) aplicarInit(guardado);
+
+      llamarAPI('init')
+        .then(d => {
+          if (!d || d.error) throw new Error((d && d.error) || 'Respuesta inválida');
+          guardarJSON('initCache', d);
+          aplicarInit(d);
+        })
+        .catch(() => {
+          if (!guardado) document.getElementById('manicuristaSelect').innerHTML = '<option value="">Error al cargar</option>';
+        });
+    }
+
+    function aplicarInit(d) {
+      manicuristasList = Array.isArray(d.manicuristas) ? d.manicuristas : [];
+      const nuevos = Array.isArray(d.servicios) ? d.servicios : [];
+      const extras = serviciosList.filter(s => !nuevos.some(n => n.toLowerCase() === s.toLowerCase()));
+      serviciosList = nuevos.concat(extras);
+      pintarSelectManicuristas();
+
+      if (d.horario && JSON.stringify(d.horario) !== JSON.stringify(HORARIO)) {
+        HORARIO = d.horario;
+        guardarJSON('horario', HORARIO);
+        actualizarHorarios();
+      }
+    }
+
+    function pintarSelectManicuristas() {
+      const select = document.getElementById('manicuristaSelect');
+      const prev = select.value;
+      select.innerHTML = '';
+      if (!manicuristasList.length) {
+        select.innerHTML = '<option value="">No hay manicuristas registradas</option>';
+        return;
+      }
+      manicuristasList.forEach(nombre => {
+        const opt = document.createElement('option');
+        opt.value = nombre;
+        opt.textContent = nombre;
+        select.appendChild(opt);
+      });
+      if (manicuristasList.includes(prev)) select.value = prev;
     }
 
     // ===================== SOLICITUD DESDE NOTIFICACIÓN =====================
@@ -654,9 +781,9 @@
       sedeReserva = sede;
       localStorage.setItem('sedeReserva', sede);
       numTrabajadores = leerNumTrabajadores();
+      horarioSeleccionado = null;
       actualizarBotonConfigLabel();
       pintarSedeReserva();
-      eventosHoyList = null;
       actualizarHorarios();
       if (vistaActiva('agenda')) cargarEventosHoy();
     }
@@ -667,6 +794,7 @@
       element.classList.add('active');
       selectedDateType = type;
       labelNombre = type;
+      horarioSeleccionado = null;
       document.getElementById('btnFechaLabel').innerText = 'Fecha';
       document.getElementById('fechaPicker').value = '';
       actualizarHorarios();
@@ -686,6 +814,7 @@
       document.getElementById('btnHoy').classList.remove('active');
       document.getElementById('btnManana').classList.remove('active');
       document.getElementById('btnFechaLabel').classList.add('active');
+      horarioSeleccionado = null;
       actualizarHorarios();
     }
 
@@ -724,112 +853,103 @@
       actualizarHorarios();
     }
 
-    // ===================== HORARIOS =====================
-    function actualizarHorarios() {
-      duracionMinutos = parseInt(document.getElementById('duracionSelect').value, 10);
-      horarioSeleccionado = null;
-      const req = ++horariosReq;
-      const container = document.getElementById('horariosBotonesContainer');
-      msgLista(container, 'Cargando horarios...', 'horarios-msg');
-
-      llamarAPI('horariosArray', {
-        sede: sedeReserva,
-        fecha: fechaKeyLocal(getTargetDate()),
-        numTrabajadores: numTrabajadores,
-        duracion: duracionMinutos
-      })
-        .then(horarios => {
-          if (req !== horariosReq) return;
-          if (!Array.isArray(horarios)) return msgLista(container, (horarios && horarios.error) || 'Error al cargar horarios', 'horarios-msg');
-          if (!horarios.length) return msgLista(container, 'No hay espacio disponible', 'horarios-msg');
-
-          container.innerHTML = '';
-          horarios.forEach(hora => {
-            const btn = document.createElement('button');
-            btn.className = 'horario-btn';
-            btn.innerText = hora;
-            btn.onclick = () => {
-              const yaSel = horarioSeleccionado === hora;
-              document.querySelectorAll('.horario-btn').forEach(b => b.classList.remove('selected'));
-              horarioSeleccionado = yaSel ? null : hora;
-              if (!yaSel) btn.classList.add('selected');
-            };
-            container.appendChild(btn);
-          });
-          ajustarEspacioInferior();
-        })
-        .catch(err => { if (req === horariosReq) msgLista(container, 'Error: ' + err.message, 'horarios-msg'); });
+    // ===================== HORARIOS (calculados en el teléfono) =====================
+    function ocupacionMaxima(evs, ini, fin) {
+      const p = [];
+      evs.forEach(e => {
+        if (ini < e.fin && fin > e.inicio) {
+          p.push([Math.max(e.inicio, ini), 1]);
+          p.push([Math.min(e.fin, fin), -1]);
+        }
+      });
+      p.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+      let act = 0, max = 0;
+      p.forEach(x => { act += x[1]; if (act > max) max = act; });
+      return max;
     }
 
-    function copiarHorarios() {
-      if (buscandoHorarios) return;
-      const btn = document.getElementById('btnCopiar');
-      buscandoHorarios = true;
-      setBtnCargando(btn, true, 'Buscando...');
+    function calcularHorarios(data, dia) {
+      const ocup = data.filter(e => !e.todoElDia);
+      const finH = dia.getDay() === 0 ? HORARIO.finDomingo : HORARIO.fin;
+      const ini = new Date(dia.getFullYear(), dia.getMonth(), dia.getDate(), HORARIO.inicio).getTime();
+      const fin = new Date(dia.getFullYear(), dia.getMonth(), dia.getDate(), finH).getTime();
+      const dur = duracionMinutos * 60000, paso = 30 * 60000, ahora = Date.now();
+      const libres = [];
+      for (let t = ini; t + dur <= fin; t += paso) {
+        if (t < ahora) continue;
+        if (ocupacionMaxima(ocup, t, t + dur) < numTrabajadores) libres.push(t);
+      }
+      return libres;
+    }
 
-      llamarAPI('horariosTexto', {
-        sede: sedeReserva,
-        fecha: fechaKeyLocal(getTargetDate()),
-        tipoDia: labelNombre,
-        numTrabajadores: numTrabajadores,
-        duracion: duracionMinutos
-      })
-        .then(texto => {
-          if (typeof texto !== 'string') {
-            alert('Error: ' + ((texto && texto.error) || 'Respuesta inesperada del servidor'));
-            return;
-          }
-          return copiarTexto(texto).then(() => mostrarToast('Copiado al portapapeles'));
+    function pintarHorarios(libres) {
+      const container = document.getElementById('horariosBotonesContainer');
+      const horas = libres.map(t => formatHoraBoton(new Date(t)));
+      if (!horas.includes(horarioSeleccionado)) horarioSeleccionado = null;
+      if (!horas.length) return msgLista(container, 'No hay espacio disponible', 'horarios-msg');
+
+      container.innerHTML = '';
+      horas.forEach(hora => {
+        const btn = document.createElement('button');
+        btn.className = 'horario-btn' + (hora === horarioSeleccionado ? ' selected' : '');
+        btn.innerText = hora;
+        btn.onclick = () => {
+          const yaSel = horarioSeleccionado === hora;
+          document.querySelectorAll('.horario-btn').forEach(b => b.classList.remove('selected'));
+          horarioSeleccionado = yaSel ? null : hora;
+          if (!yaSel) btn.classList.add('selected');
+        };
+        container.appendChild(btn);
+      });
+      ajustarEspacioInferior();
+    }
+
+    function actualizarHorarios(forzar) {
+      duracionMinutos = parseInt(document.getElementById('duracionSelect').value, 10);
+      const sede = sedeReserva, dia = getTargetDate(), fecha = fechaKeyLocal(dia);
+      const req = ++horariosReq;
+      const container = document.getElementById('horariosBotonesContainer');
+
+      const cached = diaCacheado(sede, fecha);
+      if (cached) pintarHorarios(calcularHorarios(cached, dia));
+      else msgLista(container, 'Cargando horarios...', 'horarios-msg');
+
+      obtenerDia(sede, fecha, forzar)
+        .then(data => {
+          if (req === horariosReq && data !== cached) pintarHorarios(calcularHorarios(data, dia));
         })
-        .catch(err => alert('Error al calcular horarios: ' + err.message))
-        .finally(() => {
-          buscandoHorarios = false;
-          setBtnCargando(btn, false);
+        .catch(err => {
+          if (req === horariosReq && !cached) msgLista(container, 'Error: ' + err.message, 'horarios-msg');
         });
     }
 
-    // ===================== MANICURISTAS Y SERVICIOS =====================
-    function cargarManicuristas() {
-      const select = document.getElementById('manicuristaSelect');
-      llamarAPI('manicuristas')
-        .then(data => {
-          manicuristasList = Array.isArray(data) ? data : [];
-          select.innerHTML = '';
-          if (!manicuristasList.length) {
-            select.innerHTML = '<option value="">No hay manicuristas registradas</option>';
-            return;
-          }
-          manicuristasList.forEach(nombre => {
-            const opt = document.createElement('option');
-            opt.value = nombre;
-            opt.textContent = nombre;
-            select.appendChild(opt);
-          });
-        })
-        .catch(() => { select.innerHTML = '<option value="">Error al cargar</option>'; });
+    function textoHorarios(libres) {
+      if (!libres.length) return 'Preciosa, no nos queda espacio para ' + labelNombre + '.';
+      return 'Preciosa tengo ' + libres.map(t => formatHora12(new Date(t))).join(' / ') + '\n\n¿A qué hora te agendo?';
     }
 
-    function cargarServicios(callback) {
-      if (serviciosLoading) return;
-      serviciosLoading = true;
-      llamarAPI('servicios')
-        .then(data => {
-          serviciosList = Array.isArray(data) ? data : serviciosList;
-          if (callback) callback();
-        })
-        .catch(err => {
-          if (callback && !serviciosList.length) {
-            msgLista(document.getElementById('servicioListContainer'), 'Error: ' + err.message, 'ig-item muted');
-          }
-        })
-        .finally(() => { serviciosLoading = false; });
+    function copiarHorarios() {
+      const dia = getTargetDate(), fecha = fechaKeyLocal(dia);
+      const cached = diaCacheado(sedeReserva, fecha);
+
+      if (cached) {
+        copiarTexto(textoHorarios(calcularHorarios(cached, dia))).then(() => mostrarToast('Copiado al portapapeles'));
+        return;
+      }
+
+      const btn = document.getElementById('btnCopiar');
+      setBtnCargando(btn, true, 'Buscando...');
+      obtenerDia(sedeReserva, fecha)
+        .then(data => copiarTexto(textoHorarios(calcularHorarios(data, dia))))
+        .then(() => mostrarToast('Copiado al portapapeles'))
+        .catch(err => alert('Error al calcular horarios: ' + err.message))
+        .finally(() => setBtnCargando(btn, false));
     }
 
+    // ===================== SERVICIOS =====================
     function abrirModalServicio() {
       document.getElementById('modalServicio').classList.add('active');
-      if (serviciosList.length) pintarListaServicio();
-      else msgLista(document.getElementById('servicioListContainer'), 'Cargando...', 'ig-item muted');
-      cargarServicios(pintarListaServicio);
+      pintarListaServicio();
     }
 
     function pintarListaServicio() {
@@ -852,17 +972,21 @@
       document.getElementById('modalServicio').classList.remove('active');
     }
 
+    function agregarServicioLocal(valor) {
+      if (serviciosList.some(s => s.toLowerCase() === valor.toLowerCase())) return false;
+      serviciosList.push(valor);
+      const c = leerJSON('initCache');
+      if (c) { c.servicios = serviciosList; guardarJSON('initCache', c); }
+      return true;
+    }
+
     function guardarServicioSiEsNuevo() {
       const valor = document.getElementById('servicioInput').value.trim();
-      if (!valor) return;
-      if (serviciosList.some(s => s.toLowerCase() === valor.toLowerCase())) return;
+      if (!valor || serviciosList.some(s => s.toLowerCase() === valor.toLowerCase())) return;
 
       llamarAPI('guardarServicio', { servicio: valor })
         .then(r => {
-          if (r && r.ok && !r.existente) {
-            serviciosList.push(valor);
-            mostrarToast('Servicio guardado');
-          }
+          if (r && r.ok && !r.existente && agregarServicioLocal(valor)) mostrarToast('Servicio guardado');
         })
         .catch(() => {});
     }
@@ -875,17 +999,18 @@
         .then(data => {
           igHandles = Array.isArray(data) ? data : [];
           igLoaded = true;
+          guardarJSON('igCache', igHandles);
           if (callback) callback();
         })
         .catch(err => {
-          if (callback && !igLoaded) msgLista(document.getElementById('igListContainer'), 'Error: ' + err.message, 'ig-item muted');
+          if (callback && !igHandles.length) msgLista(document.getElementById('igListContainer'), 'Error: ' + err.message, 'ig-item muted');
         })
         .finally(() => { igLoading = false; });
     }
 
     function abrirModalIG() {
       document.getElementById('modalIG').classList.add('active');
-      if (igLoaded) pintarListaIG();
+      if (igHandles.length || igLoaded) pintarListaIG();
       else msgLista(document.getElementById('igListContainer'), 'Cargando lista...', 'ig-item muted');
       cargarClientesIG(pintarListaIG);
     }
@@ -920,75 +1045,80 @@
       const servicio = document.getElementById('servicioInput').value.trim();
       if (!servicio) return alert('Escribe o selecciona el servicio.');
 
+      const sede = sedeReserva;
+      const fecha = fechaKeyLocal(getTargetDate());
+      const ig = igSeleccionado;
       const btn = document.getElementById('btnAgendar');
-      setBtnCargando(btn, true, 'Agendando en ' + nombreSede(sedeReserva) + '...');
+      setBtnCargando(btn, true, 'Agendando en ' + nombreSede(sede) + '...');
 
       llamarAPI('crearCita', {
-        sede: sedeReserva,
-        fecha: fechaKeyLocal(getTargetDate()),
+        sede: sede,
+        fecha: fecha,
         hora: horarioSeleccionado,
         duracion: duracionMinutos,
         numTrabajadores: numTrabajadores,
         manicurista: manicurista,
         cliente: cliente,
         servicio: servicio,
-        ig: igSeleccionado
+        ig: ig
       })
         .then(r => {
           if (!r || !r.ok) {
             alert('Error al agendar: ' + ((r && r.error) || 'desconocido'));
-            actualizarHorarios();
+            refrescarTrasCambio(sede, [fecha]);
             return;
           }
-          mostrarToast('Cita agendada en ' + nombreSede(sedeReserva) + ' ✓');
 
+          // Actualiza al instante la caché local con la nueva cita
+          const d = diaCacheado(sede, fecha);
+          if (d && r.inicio) {
+            d.push({
+              id: r.id, titulo: r.titulo, manicurista: (r.abrev || '').trim(),
+              cliente: cliente, servicio: servicio, inicio: r.inicio, fin: r.fin,
+              todoElDia: false, recurrente: false, ig: ig
+            });
+          }
+
+          mostrarToast('Cita agendada en ' + nombreSede(sede) + ' ✓');
           document.getElementById('nombreClienta').value = '';
           document.getElementById('servicioInput').value = '';
           setIGSeleccionado('');
           const banner = document.getElementById('bannerSolicitud');
           if (banner) banner.remove();
-          eventosHoyList = null;
-          if (!serviciosList.some(s => s.toLowerCase() === servicio.toLowerCase())) serviciosList.push(servicio);
+          agregarServicioLocal(servicio);
+          horarioSeleccionado = null;
           actualizarHorarios();
+          refrescarTrasCambio(sede, [fecha]);
         })
         .catch(err => alert('Error al agendar: ' + err.message))
         .finally(() => setBtnCargando(btn, false));
     }
 
     // ===================== CONFIRMAR (CITAS DE HOY) =====================
-    function cargarEventosHoy() {
+    function cargarEventosHoy(forzar) {
       const container = document.getElementById('eventosListContainer');
+      const sede = sedeReserva, fecha = fechaKeyLocal(new Date());
+      const cached = diaCacheado(sede, fecha);
 
-      if (eventosHoyList !== null) pintarEventosHoy(eventosHoyList);
+      if (cached) pintarEventosHoy(cached);
       else msgLista(container, 'Cargando citas...', 'empty-msg');
 
-      if (eventosHoyLoading) return;
-      eventosHoyLoading = true;
-      const sedePedida = sedeReserva;
-
-      llamarAPI('eventosHoy', { sede: sedePedida })
-        .then(eventos => {
-          eventosHoyLoading = false;
-          if (sedePedida !== sedeReserva) return cargarEventosHoy();
-          if (!Array.isArray(eventos)) {
-            if (eventosHoyList === null) msgLista(container, (eventos && eventos.error) || 'Error al cargar citas', 'empty-msg');
-            return;
-          }
-          eventosHoyList = eventos;
-          if (vistaActiva('agenda')) pintarEventosHoy(eventosHoyList);
+      obtenerDia(sede, fecha, forzar)
+        .then(data => {
+          if (sede !== sedeReserva || !vistaActiva('agenda')) return;
+          if (data !== cached) pintarEventosHoy(data);
         })
-        .catch(err => {
-          eventosHoyLoading = false;
-          if (eventosHoyList === null) msgLista(container, 'Error: ' + err.message, 'empty-msg');
-        });
+        .catch(err => { if (!cached) msgLista(container, 'Error: ' + err.message, 'empty-msg'); });
     }
 
-    function pintarEventosHoy(eventos) {
+    function pintarEventosHoy(data) {
       const container = document.getElementById('eventosListContainer');
+      const eventos = data.filter(e => !e.todoElDia).slice().sort((a, b) => a.inicio - b.inicio);
       if (!eventos.length) return msgLista(container, 'No hay citas para hoy en ' + nombreSede(sedeReserva), 'empty-msg');
       container.innerHTML = '';
 
       eventos.forEach(ev => {
+        const horaTexto = formatHoraBoton(new Date(ev.inicio));
         const row = document.createElement('div');
         row.className = 'evento-item';
 
@@ -996,22 +1126,22 @@
         info.className = 'evento-info';
         const nombre = document.createElement('div');
         nombre.className = 'evento-nombre';
-        nombre.textContent = ev.clienteNombre;
+        nombre.textContent = ev.cliente;
         const hora = document.createElement('div');
         hora.className = 'evento-hora';
-        hora.textContent = ev.horaTexto + (ev.servicio ? ' · ' + ev.servicio : '');
+        hora.textContent = horaTexto + (ev.servicio ? ' · ' + ev.servicio : '');
         info.appendChild(nombre);
         info.appendChild(hora);
 
         const btnMan = document.createElement('button');
         btnMan.className = 'btn-square';
-        btnMan.textContent = (ev.manicuristaAbrev || '').trim() || '···';
-        btnMan.onclick = () => abrirModalManicuristaEvento(ev.id, btnMan);
+        btnMan.textContent = (ev.manicurista || '').trim() || '···';
+        btnMan.onclick = () => abrirModalManicuristaEvento(ev, btnMan);
 
         const btnOk = document.createElement('button');
         btnOk.className = 'btn-square';
         btnOk.textContent = '✓';
-        btnOk.onclick = () => confirmarCitaEvento(ev);
+        btnOk.onclick = () => confirmarCitaEvento(horaTexto, ev.ig);
 
         row.appendChild(info);
         row.appendChild(btnMan);
@@ -1021,7 +1151,7 @@
       ajustarEspacioInferior();
     }
 
-    function abrirModalManicuristaEvento(eventId, btnRef) {
+    function abrirModalManicuristaEvento(ev, btnRef) {
       const container = document.getElementById('manicuristaEventoListContainer');
       if (!manicuristasList.length) {
         msgLista(container, 'No hay manicuristas registradas', 'ig-item muted');
@@ -1031,7 +1161,7 @@
           const div = document.createElement('div');
           div.className = 'ig-item';
           div.textContent = nombre;
-          div.onclick = () => asignarManicuristaAEvento(eventId, nombre, btnRef);
+          div.onclick = () => asignarManicuristaAEvento(ev, nombre, btnRef);
           container.appendChild(div);
         });
       }
@@ -1042,21 +1172,28 @@
       document.getElementById('modalManicuristaEvento').classList.remove('active');
     }
 
-    function asignarManicuristaAEvento(eventId, nombre, btnRef) {
+    function asignarManicuristaAEvento(ev, nombre, btnRef) {
       cerrarModalManicuristaEvento();
-      llamarAPI('asignarManicurista', { sede: sedeReserva, eventId: eventId, manicurista: nombre })
+      const sede = sedeReserva;
+      const anterior = btnRef.textContent;
+      btnRef.textContent = '…';
+      llamarAPI('asignarManicurista', { sede: sede, eventId: ev.id, manicurista: nombre })
         .then(r => {
-          if (!r || !r.ok) return alert('Error: ' + ((r && r.error) || 'desconocido'));
-          btnRef.textContent = (r.abrev || '').trim() || '···';
+          if (!r || !r.ok) throw new Error((r && r.error) || 'desconocido');
+          ev.manicurista = (r.abrev || '').trim();
+          btnRef.textContent = ev.manicurista || '···';
           mostrarToast('Manicurista asignada');
-          eventosHoyList = null;
+          refrescarTrasCambio(sede, [fechaKeyLocal(new Date(ev.inicio))]);
         })
-        .catch(err => alert('Error: ' + err.message));
+        .catch(err => {
+          btnRef.textContent = anterior;
+          alert('Error: ' + err.message);
+        });
     }
 
-    function confirmarCitaEvento(ev) {
-      const mensaje = 'Preciosa, confirmamos tu cita a las ' + ev.horaTexto + ', te esperamos 💕';
-      const usuario = (ev.ig || '').trim().replace(/^@/, '');
+    function confirmarCitaEvento(horaTexto, igRaw) {
+      const mensaje = 'Preciosa, confirmamos tu cita a las ' + horaTexto + ', te esperamos 💕';
+      const usuario = (igRaw || '').trim().replace(/^@/, '');
       copiarTexto(mensaje).then(() => {
         mostrarToast(usuario ? 'Mensaje copiado, pégalo en el chat' : 'Mensaje copiado al portapapeles');
       });
@@ -1081,12 +1218,9 @@
     let calReq = 0;
     let calEventoActual = null;
     let calArrastrando = false;
+    let calScrollPendiente = false;
 
-    function formatHora12(d) {
-      let h = d.getHours(), m = d.getMinutes(), ap = h >= 12 ? 'pm' : 'am';
-      h = h % 12 || 12;
-      return h + (m ? ':' + String(m).padStart(2, '0') : '') + ap;
-    }
+    const clonar = arr => arr.map(e => Object.assign({}, e));
     function rangoHora(a, b) { return formatHora12(new Date(a)) + ' – ' + formatHora12(new Date(b)); }
     function etiquetaHora(h) { return (h % 12 || 12) + ' ' + (h >= 12 ? 'pm' : 'am'); }
     function minDesdeInicio(ms) { return (ms - calFecha.getTime()) / 60000 - CAL_HORA_INI * 60; }
@@ -1100,11 +1234,12 @@
 
     function initCalendario() {
       document.querySelectorAll('#sedeControl .seg-btn').forEach(b => b.classList.toggle('active', b.dataset.sede === calSede));
+      calScrollPendiente = true;
       cargarCalendario();
     }
     function cambiarSede(sede) { calSede = sede; localStorage.setItem('calSede', sede); initCalendario(); }
     function moverDia(n) { calFecha.setDate(calFecha.getDate() + n); cargarCalendario(); }
-    function irHoy() { calFecha = new Date(); calFecha.setHours(0, 0, 0, 0); cargarCalendario(); }
+    function irHoy() { calFecha = new Date(); calFecha.setHours(0, 0, 0, 0); calScrollPendiente = true; cargarCalendario(); }
     function elegirFechaCal(input) {
       if (!input.value) return;
       const p = input.value.split('-');
@@ -1144,6 +1279,18 @@
       });
     }
 
+    // Al abrir en "hoy", baja hasta la hora actual
+    function scrollCalAhora() {
+      if (!calScrollPendiente) return;
+      calScrollPendiente = false;
+      const now = document.querySelector('.cal-now');
+      if (!now) return;
+      const vc = document.querySelector('.view-container');
+      const header = document.querySelector('.cal-header');
+      const y = now.getBoundingClientRect().top - vc.getBoundingClientRect().top + vc.scrollTop;
+      vc.scrollTop = Math.max(0, y - header.offsetHeight - 120);
+    }
+
     function actualizarLabelCal() {
       const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
       const diff = Math.round((calFecha - hoy) / 86400000);
@@ -1155,21 +1302,34 @@
       document.getElementById('calFechaPicker').value = fechaKeyLocal(calFecha);
     }
 
-    function cargarCalendario() {
-      actualizarLabelCal();
-      const req = ++calReq;
-      const grid = document.getElementById('calGrid');
-      calEventos = [];
-      pintarCalendario();
-      grid.style.opacity = '0.5';
+    function precargarVecinos(sede) {
+      [-1, 1].forEach(n => {
+        const d = new Date(calFecha);
+        d.setDate(d.getDate() + n);
+        obtenerDia(sede, fechaKeyLocal(d)).catch(() => {});
+      });
+    }
 
-      llamarAPI('eventosDia', { sede: calSede, fecha: fechaKeyLocal(calFecha) })
+    function cargarCalendario(forzar) {
+      actualizarLabelCal();
+      const req = ++calReq, sede = calSede, fecha = fechaKeyLocal(calFecha);
+      const grid = document.getElementById('calGrid');
+
+      const cached = diaCacheado(sede, fecha);
+      calEventos = cached ? clonar(cached) : [];
+      pintarCalendario();
+      scrollCalAhora();
+      grid.style.opacity = cached ? '1' : '0.5';
+
+      obtenerDia(sede, fecha, forzar)
         .then(data => {
           if (req !== calReq) return;
           grid.style.opacity = '1';
-          if (!Array.isArray(data)) return mostrarToast('Error: ' + ((data && data.error) || 'desconocido'));
-          calEventos = data;
-          pintarCalendario();
+          if (data !== cached && !calArrastrando) {
+            calEventos = clonar(data);
+            pintarCalendario();
+          }
+          precargarVecinos(sede);
         })
         .catch(err => {
           if (req !== calReq) return;
@@ -1322,32 +1482,28 @@
       });
     }
 
-    function tocarDatosReserva(sede) {
-      eventosHoyList = null;
-      if (sede === sedeReserva) actualizarHorarios();
-    }
-
     function guardarMovimiento(ev, nuevoIni, nuevoFin) {
       const prevIni = ev.inicio, prevFin = ev.fin;
+      const sede = calSede;
+      const fechaAnt = fechaKeyLocal(new Date(prevIni));
+      const fechaNueva = fechaKeyLocal(new Date(nuevoIni));
+
       ev.inicio = nuevoIni;
       ev.fin = nuevoFin;
-      if (fechaKeyLocal(new Date(nuevoIni)) !== fechaKeyLocal(calFecha)) {
-        calEventos = calEventos.filter(e => e !== ev);
-      }
+      if (fechaNueva !== fechaKeyLocal(calFecha)) calEventos = calEventos.filter(e => e !== ev);
       pintarCalendario();
 
-      const sede = calSede;
       llamarAPI('moverEvento', { sede: sede, eventId: ev.id, inicio: nuevoIni, fin: nuevoFin })
         .then(r => {
           if (!r || !r.ok) throw new Error((r && r.error) || 'desconocido');
           mostrarToast('Cita actualizada ✓');
-          tocarDatosReserva(sede);
+          refrescarTrasCambio(sede, fechaAnt === fechaNueva ? [fechaAnt] : [fechaAnt, fechaNueva]);
         })
         .catch(err => {
           ev.inicio = prevIni;
           ev.fin = prevFin;
           alert('No se pudo actualizar: ' + err.message);
-          cargarCalendario();
+          cargarCalendario(true);
         });
     }
 
@@ -1416,15 +1572,16 @@
       pintarCalendario();
 
       const sede = calSede;
+      const fecha = fechaKeyLocal(new Date(ev.inicio));
       llamarAPI('borrarEvento', { sede: sede, eventId: ev.id })
         .then(r => {
           if (!r || !r.ok) throw new Error((r && r.error) || 'desconocido');
           mostrarToast('Cita eliminada');
-          tocarDatosReserva(sede);
+          refrescarTrasCambio(sede, [fecha]);
         })
         .catch(err => {
           alert('No se pudo eliminar: ' + err.message);
-          cargarCalendario();
+          cargarCalendario(true);
         });
     }
   </script>
