@@ -532,11 +532,12 @@
     function copiarFallback(texto) {
       const t = document.createElement('textarea');
       t.value = texto;
-      t.style.position = 'fixed';
-      t.style.opacity = '0';
+      t.setAttribute('readonly', '');
+      t.style.cssText = 'position:fixed; top:0; left:0; opacity:0; font-size:16px;';
       document.body.appendChild(t);
       t.select();
-      document.execCommand('copy');
+      t.setSelectionRange(0, texto.length);
+      try { document.execCommand('copy'); } catch (e) {}
       document.body.removeChild(t);
     }
 
@@ -925,7 +926,7 @@
 
       const { sede, fecha, inicio, idem } = nuevaCita;
       const duracion = duracionNueva();
-      const ig = igSeleccionado;
+      const ig = igSeleccionado || (cliente.startsWith('@') ? cliente.slice(1).split(/\s/)[0] : '');
 
       const params = {
         sede: sede, inicio: inicio, duracion: duracion,
@@ -1175,10 +1176,16 @@
           abrirModalManicuristaEvento(ev, btnMan);
         };
 
-        const btnOk = document.createElement('button');
+                const usuarioIG = (ev.ig || '').trim().replace(/^@/, '');
+        const btnOk = document.createElement(usuarioIG ? 'a' : 'button');
         btnOk.className = 'btn-square';
         btnOk.textContent = '✓';
-        btnOk.onclick = () => confirmarCitaEvento(horaTexto, ev.ig);
+        if (usuarioIG) {
+          btnOk.href = 'https://ig.me/m/' + encodeURIComponent(usuarioIG);
+          btnOk.style.textDecoration = 'none';
+        }
+        btnOk.onclick = () => confirmarCitaEvento(horaTexto, usuarioIG);
+        
 
         row.appendChild(info);
         row.appendChild(btnMan);
@@ -1227,13 +1234,12 @@
         });
     }
 
-    function confirmarCitaEvento(horaTexto, igRaw) {
+    // Copia al instante (antes de saltar a Instagram); el enlace del ✓ abre el chat
+    function confirmarCitaEvento(horaTexto, usuario) {
       const mensaje = 'Preciosa, confirmamos tu cita a las ' + horaTexto + ', te esperamos 💕';
-      const usuario = (igRaw || '').trim().replace(/^@/, '');
-      copiarTexto(mensaje).then(() => {
-        mostrarToast(usuario ? 'Mensaje copiado, pégalo en el chat' : 'Mensaje copiado al portapapeles');
-      });
-      if (usuario) window.open('https://ig.me/m/' + encodeURIComponent(usuario), '_blank');
+      copiarFallback(mensaje);
+      copiarTexto(mensaje);
+      mostrarToast(usuario ? 'Mensaje copiado · pégalo en el chat' : 'Sin Instagram: mensaje copiado');
     }
 
     // ===================== INSTALAR (Android) =====================
