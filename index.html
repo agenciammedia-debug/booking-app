@@ -17,7 +17,9 @@
       });
     });
   </script>
-  <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link rel="apple-touch-icon" href="icon-192.png">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#F2F2F7">
   <meta name="apple-mobile-web-app-title" content="Booking">
@@ -120,6 +122,16 @@
       cursor: pointer;
     }
     .btn-ig:active { transform: scale(0.95); }
+
+        .adelanto-row { display: flex; gap: 8px; }
+    .adelanto-btn {
+      flex: 1; height: 40px; border: none; border-radius: 10px;
+      background: var(--fill); color: var(--text-main);
+      font-size: 15px; font-weight: 600; cursor: pointer;
+      transition: background .15s, color .15s;
+    }
+    .adelanto-btn.active { background: #34C759; color: #fff; }
+    .adelanto-btn:active { transform: scale(0.95); }
 
     #igSeleccionadoLabel { display: none; font-size: 12px; color: var(--apple-blue); font-weight: 600; margin-bottom: 6px; padding-left: 4px; }
 
@@ -276,6 +288,7 @@
             <button class="seg-btn" data-sede="miraflores" onclick="cambiarSede('miraflores')">Miraflores</button>
             <button class="seg-btn" data-sede="surco" onclick="cambiarSede('surco')">Surco</button>
           </div>
+                    <button class="icon-btn" id="btnInstalar" onclick="instalarApp()" aria-label="Instalar app" style="display:none;">⬇️</button>
           <button class="icon-btn" onclick="activarNotificaciones()" aria-label="Notificaciones">🔔</button>
         </div>
         <div class="cal-nav">
@@ -357,7 +370,14 @@
             </button>
           </div>
         </div>
-
+              <div class="field">
+          <label class="field-label">Adelanto (opcional)</label>
+          <div class="adelanto-row" id="adelantoRow">
+            <button type="button" class="adelanto-btn" data-monto="5" onclick="elegirAdelanto(5)">S/ 5</button>
+            <button type="button" class="adelanto-btn" data-monto="10" onclick="elegirAdelanto(10)">S/ 10</button>
+            <button type="button" class="adelanto-btn" data-monto="20" onclick="elegirAdelanto(20)">S/ 20</button>
+          </div>
+        </div>
         <button class="btn-primary" style="margin-top:20px;" onclick="guardarNuevaCita()">Agendar cita</button>
       </div>
     </div>
@@ -844,6 +864,13 @@
       }
     }
 
+
+          let adelantoSel = 0;
+    function elegirAdelanto(monto) {
+      adelantoSel = adelantoSel === monto ? 0 : monto;   // tocar de nuevo = quitar
+      document.querySelectorAll('#adelantoRow .adelanto-btn')
+        .forEach(b => b.classList.toggle('active', Number(b.dataset.monto) === adelantoSel));
+    }
     // ===================== NUEVA CITA (popup) =====================
     function duracionNueva() {
       return parseInt(document.getElementById('ncDuracion').value, 10) || 90;
@@ -859,7 +886,8 @@
 
       document.getElementById('nombreClienta').value = solicitud && solicitud.nombre ? solicitud.nombre : '';
       document.getElementById('servicioInput').value = '';
-      setIGSeleccionado(solicitud ? solicitud.ig : '');
+           setIGSeleccionado(solicitud ? solicitud.ig : '');
+      adelantoSel = 5; elegirAdelanto(5);   // reinicia a "sin adelanto"
 
       actualizarResumenNueva();
       document.getElementById('modalNueva').classList.add('active');
@@ -895,7 +923,7 @@
       const params = {
         sede: sede, inicio: inicio, duracion: duracion,
         manicurista: manicurista, cliente: cliente, servicio: servicio,
-        ig: ig, idem: idem
+               ig: ig, idem: idem, adelanto: adelantoSel
       };
       const temp = {
         id: 'tmp_' + idem,
@@ -903,7 +931,7 @@
         manicurista: manicurista.toLowerCase() === 'cualquiera' ? '' : manicurista.substring(0, 3),
         cliente: cliente, servicio: servicio,
         inicio: inicio, fin: inicio + duracion * 60000,
-        todoElDia: false, recurrente: false, ig: ig, pendiente: true
+                todoElDia: false, recurrente: false, ig: ig, adelanto: adelantoSel, pendiente: true
       };
 
       // 1) Se guarda en el teléfono al instante (sobrevive si cierras la app)
@@ -1128,7 +1156,7 @@
         nombre.textContent = ev.cliente;
         const hora = document.createElement('div');
         hora.className = 'evento-hora';
-        hora.textContent = horaTexto + (ev.servicio ? ' · ' + ev.servicio : '');
+                hora.textContent = horaTexto + (ev.servicio ? ' · ' + ev.servicio : '') + (ev.adelanto ? ' · Adelanto S/ ' + ev.adelanto : '');
         info.appendChild(nombre);
         info.appendChild(hora);
 
@@ -1201,6 +1229,27 @@
       if (usuario) window.open('https://ig.me/m/' + encodeURIComponent(usuario), '_blank');
     }
 
+    // ===================== INSTALAR (Android) =====================
+    let eventoInstalar = null;
+    window.addEventListener('beforeinstallprompt', e => {
+      e.preventDefault();
+      eventoInstalar = e;
+      document.getElementById('btnInstalar').style.display = 'flex';
+    });
+    window.addEventListener('appinstalled', () => {
+      eventoInstalar = null;
+      document.getElementById('btnInstalar').style.display = 'none';
+      mostrarToast('App instalada ✓');
+    });
+    function instalarApp() {
+      if (!eventoInstalar) return;
+      eventoInstalar.prompt();
+      eventoInstalar.userChoice.finally(() => {
+        eventoInstalar = null;
+        document.getElementById('btnInstalar').style.display = 'none';
+      });
+    }
+    
     // ===================== NOTIFICACIONES =====================
     function activarNotificaciones() {
       window.OneSignalDeferred = window.OneSignalDeferred || [];
@@ -1513,7 +1562,7 @@
       div.style.backgroundColor = CAL_COLOR_CITA;
       div.innerHTML = '<div class="cal-ev-t"></div><div class="cal-ev-s"></div>';
       div.children[0].textContent = (ev.manicurista ? '[' + ev.manicurista + '] ' : '') + ev.cliente;
-      div.children[1].textContent = rangoHora(ev.inicio, ev.fin) + (ev.servicio ? ' · ' + ev.servicio : '');
+            div.children[1].textContent = rangoHora(ev.inicio, ev.fin) + (ev.servicio ? ' · ' + ev.servicio : '') + (ev.adelanto ? ' · S/' + ev.adelanto : '');
       activarArrastre(div, ev);
       return div;
     }
@@ -1620,7 +1669,8 @@
       document.getElementById('meSub').textContent = [
         ev.todoElDia ? 'Todo el día' : rangoHora(ev.inicio, ev.fin),
         ev.servicio,
-        ev.manicurista ? 'Manicurista: ' + ev.manicurista : ''
+                ev.manicurista ? 'Manicurista: ' + ev.manicurista : '',
+        ev.adelanto ? 'Adelanto: S/ ' + ev.adelanto : 'Sin adelanto'
       ].filter(Boolean).join(' · ');
 
       const bloqueado = ev.recurrente || ev.todoElDia || ev.pendiente;
