@@ -289,7 +289,8 @@
             <button class="seg-btn" data-sede="surco" onclick="cambiarSede('surco')">Surco</button>
           </div>
                     <button class="icon-btn" id="btnInstalar" onclick="instalarApp()" aria-label="Instalar app" style="display:none;">⬇️</button>
-          <button class="icon-btn" onclick="activarNotificaciones()" aria-label="Notificaciones">🔔</button>
+                    <button class="icon-btn" onclick="activarNotificaciones()" aria-label="Notificaciones">🔔</button>
+          <button class="icon-btn" onclick="diagnosticoPWA()" aria-label="Diagnóstico">🔍</button>
         </div>
         <div class="cal-nav">
           <button class="cal-nav-btn" onclick="cambiarDiaAnimado(-1)" aria-label="Día anterior">‹</button>
@@ -1255,7 +1256,33 @@
         document.getElementById('btnInstalar').style.display = 'none';
       });
     }
-    
+        async function diagnosticoPWA() {
+      const r = [];
+      const sw = navigator.serviceWorker;
+      r.push('SW controla la página: ' + (sw && sw.controller ? 'SÍ' : 'NO'));
+      try {
+        const regs = sw ? await sw.getRegistrations() : [];
+        r.push('SW registrados: ' + (regs.map(x => x.scope).join(' | ') || 'ninguno'));
+      } catch (e) { r.push('SW error: ' + e.message); }
+      try {
+        const href = document.querySelector('link[rel=manifest]').href;
+        const m = await (await fetch(href, { cache: 'no-store' })).json();
+        r.push('Manifest: OK · display=' + m.display + ' · start_url=' + m.start_url);
+        for (const ic of (m.icons || [])) {
+          const url = new URL(ic.src, href).href;
+          const tam = await new Promise(res => {
+            const i = new Image();
+            i.onload = () => res(i.naturalWidth + 'x' + i.naturalHeight);
+            i.onerror = () => res('NO CARGA');
+            i.src = url + '?v=' + Date.now();
+          });
+          r.push('Ícono ' + ic.src + ' (esperado ' + ic.sizes + '): ' + tam);
+        }
+      } catch (e) { r.push('Manifest ERROR: ' + e.message); }
+      r.push('Chrome dice instalable: ' + (eventoInstalar ? 'SÍ' : 'NO'));
+      r.push('Navegador: ' + navigator.userAgent.slice(0, 120));
+      alert(r.join('\n'));
+    }
     // ===================== NOTIFICACIONES =====================
     function activarNotificaciones() {
       window.OneSignalDeferred = window.OneSignalDeferred || [];
