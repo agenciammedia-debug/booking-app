@@ -704,6 +704,12 @@
         .finally(() => { sondeando = false; });
     }
 
+        // Registra el service worker siempre (necesario para "Instalar app" en Android).
+    // Es el mismo archivo y scope que usa OneSignal, así que no hay conflicto.
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/booking-app/OneSignalSDKWorker.js', { scope: '/booking-app/' })
+        .catch(err => console.log('SW error:', err));
+    }
     // ===================== INICIO =====================
     window.onload = function() {
       precargarClientaDesdeURL();
