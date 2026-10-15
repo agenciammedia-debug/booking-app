@@ -1604,7 +1604,7 @@
       div.style.backgroundColor = CAL_COLOR_CITA;
       div.innerHTML = '<div class="cal-ev-t"></div><div class="cal-ev-s"></div>';
       div.children[0].textContent = (ev.manicurista ? '[' + ev.manicurista + '] ' : '') + ev.cliente;
-            div.children[1].textContent = rangoHora(ev.inicio, ev.fin) + (ev.servicio ? ' · ' + ev.servicio : '') + (ev.adelanto ? ' · S/' + ev.adelanto : '');
+            div.children[1].textContent = rangoHora(ev.inicio, ev.fin) + (ev.servicio ? ' · ' + ev.servicio : '') + (ev.adelanto ? ' · ' + (ev.adelanto === 'total' ? '💯' : 'S/' + ev.adelanto) : '');
       activarArrastre(div, ev);
       return div;
     }
