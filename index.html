@@ -374,9 +374,9 @@
               <div class="field">
           <label class="field-label">Adelanto (opcional)</label>
           <div class="adelanto-row" id="adelantoRow">
-            <button type="button" class="adelanto-btn" data-monto="5" onclick="elegirAdelanto(5)">S/ 5</button>
             <button type="button" class="adelanto-btn" data-monto="10" onclick="elegirAdelanto(10)">S/ 10</button>
             <button type="button" class="adelanto-btn" data-monto="20" onclick="elegirAdelanto(20)">S/ 20</button>
+            <button type="button" class="adelanto-btn" data-monto="total" onclick="elegirAdelanto('total')" aria-label="Pagado total">💯</button>
           </div>
         </div>
         <button class="btn-primary" style="margin-top:20px;" onclick="guardarNuevaCita()">Agendar cita</button>
@@ -872,12 +872,15 @@
       }
     }
 
+        function textoAdelanto(a) {
+      return a === 'total' ? '💯 Pagado total' : 'Adelanto S/ ' + a;
+    }
 
           let adelantoSel = 0;
     function elegirAdelanto(monto) {
       adelantoSel = adelantoSel === monto ? 0 : monto;   // tocar de nuevo = quitar
       document.querySelectorAll('#adelantoRow .adelanto-btn')
-        .forEach(b => b.classList.toggle('active', Number(b.dataset.monto) === adelantoSel));
+               .forEach(b => b.classList.toggle('active', String(b.dataset.monto) === String(adelantoSel)));
     }
     // ===================== NUEVA CITA (popup) =====================
     function duracionNueva() {
@@ -895,7 +898,7 @@
       document.getElementById('nombreClienta').value = solicitud && solicitud.nombre ? solicitud.nombre : '';
       document.getElementById('servicioInput').value = '';
            setIGSeleccionado(solicitud ? solicitud.ig : '');
-      adelantoSel = 5; elegirAdelanto(5);   // reinicia a "sin adelanto"
+            adelantoSel = 0; elegirAdelanto(0);   // reinicia a "sin adelanto"
 
       actualizarResumenNueva();
       document.getElementById('modalNueva').classList.add('active');
@@ -1164,7 +1167,7 @@
         nombre.textContent = ev.cliente;
         const hora = document.createElement('div');
         hora.className = 'evento-hora';
-                hora.textContent = horaTexto + (ev.servicio ? ' · ' + ev.servicio : '') + (ev.adelanto ? ' · Adelanto S/ ' + ev.adelanto : '');
+                hora.textContent = horaTexto + (ev.servicio ? ' · ' + ev.servicio : '') + (ev.adelanto ? ' · ' + textoAdelanto(ev.adelanto) : '');
         info.appendChild(nombre);
         info.appendChild(hora);
 
@@ -1709,7 +1712,7 @@
         ev.todoElDia ? 'Todo el día' : rangoHora(ev.inicio, ev.fin),
         ev.servicio,
                 ev.manicurista ? 'Manicurista: ' + ev.manicurista : '',
-        ev.adelanto ? 'Adelanto: S/ ' + ev.adelanto : 'Sin adelanto'
+        ev.adelanto ? textoAdelanto(ev.adelanto) : 'Sin adelanto'
       ].filter(Boolean).join(' · ');
 
       const bloqueado = ev.recurrente || ev.todoElDia || ev.pendiente;
