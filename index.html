@@ -132,6 +132,12 @@
     }
     .adelanto-btn.active { background: #34C759; color: #fff; }
     .adelanto-btn:active { transform: scale(0.95); }
+        .nueva-btn {
+      position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+      background: var(--fill); color: var(--text-muted); border: none; border-radius: 999px;
+      padding: 5px 10px; font-size: 13px; font-weight: 600; cursor: pointer;
+    }
+    .nueva-btn.active { background: #FF9500; color: #fff; }
 
     #igSeleccionadoLabel { display: none; font-size: 12px; color: var(--apple-blue); font-weight: 600; margin-bottom: 6px; padding-left: 4px; }
 
@@ -324,7 +330,7 @@
   <!-- ===== NUEVA CITA ===== -->
   <div id="modalNueva" class="modal-overlay ligero" onclick="if(event.target===this)cerrarNuevaCita()">
     <div class="modal-sheet">
-      <div class="modal-header">Nueva cita<button class="close-btn" onclick="cerrarNuevaCita()">Cancelar</button></div>
+           <div class="modal-header"><button type="button" id="btnNueva" class="nueva-btn" onclick="toggleNueva()">🆕 Nueva</button>Nueva cita<button class="close-btn" onclick="cerrarNuevaCita()">Cancelar</button></div>
       <div class="modal-body">
         <div class="nc-resumen">
           <div id="ncCuando"></div>
@@ -872,6 +878,12 @@
       }
     }
 
+          let clientaNueva = false;
+    function toggleNueva(valor) {
+      clientaNueva = typeof valor === 'boolean' ? valor : !clientaNueva;
+      document.getElementById('btnNueva').classList.toggle('active', clientaNueva);
+    }
+    
         function textoAdelanto(a) {
       return a === 'total' ? '💯 Pagado total' : 'Adelanto S/ ' + a;
     }
@@ -899,6 +911,7 @@
       document.getElementById('servicioInput').value = '';
            setIGSeleccionado(solicitud ? solicitud.ig : '');
             adelantoSel = 0; elegirAdelanto(0);   // reinicia a "sin adelanto"
+            toggleNueva(false);
 
       actualizarResumenNueva();
       document.getElementById('modalNueva').classList.add('active');
@@ -934,13 +947,13 @@
       const params = {
         sede: sede, inicio: inicio, duracion: duracion,
         manicurista: manicurista, cliente: cliente, servicio: servicio,
-               ig: ig, idem: idem, adelanto: adelantoSel
+               ig: ig, idem: idem, adelanto: adelantoSel, nueva: clientaNueva ? 1 : 0
       };
       const temp = {
         id: 'tmp_' + idem,
-        titulo: cliente + ' - ' + servicio,
+                titulo: (clientaNueva ? '🆕 ' : '') + cliente + ' - ' + servicio,
         manicurista: manicurista.toLowerCase() === 'cualquiera' ? '' : manicurista.substring(0, 3),
-        cliente: cliente, servicio: servicio,
+        cliente: (clientaNueva ? '🆕 ' : '') + cliente, servicio: servicio,
         inicio: inicio, fin: inicio + duracion * 60000,
                 todoElDia: false, recurrente: false, ig: ig, adelanto: adelantoSel, pendiente: true
       };
