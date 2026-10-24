@@ -1110,22 +1110,43 @@
       cargarClientesIG(pintarListaIG);
     }
 
-    function pintarListaIG() {
+        function pintarListaIG() {
       const container = document.getElementById('igListContainer');
-      if (!igHandles.length) return msgLista(container, 'No hay clientas agendadas para hoy', 'ig-item muted');
+      if (!igHandles.length) return msgLista(container, 'Aún no hay mensajes registrados', 'ig-item muted');
       container.innerHTML = '';
-      igHandles.forEach(ig => {
+      igHandles.forEach(x => {
+        const item = typeof x === 'string' ? { ig: x, nombre: '' } : x;
+        const ig = (item.ig || '').replace(/^@/, '');
+        if (!ig) return;
         const div = document.createElement('div');
         div.className = 'ig-item';
-        div.textContent = ig;
+        const l1 = document.createElement('div');
+        l1.textContent = '@' + ig;
+        div.appendChild(l1);
+        const extra = [item.nombre, item.t ? haceCuanto(item.t) : ''].filter(Boolean).join(' · ');
+        if (extra) {
+          const l2 = document.createElement('div');
+          l2.style.cssText = 'font-size:13px; color:var(--text-muted); margin-top:2px;';
+          l2.textContent = extra;
+          div.appendChild(l2);
+        }
         div.onclick = () => {
           setIGSeleccionado(ig);
           const nombre = document.getElementById('nombreClienta');
-          if (!nombre.value.trim()) nombre.value = '@' + igSeleccionado;
+          if (!nombre.value.trim()) nombre.value = item.nombre || ('@' + ig);
           cerrarModalIG();
         };
         container.appendChild(div);
       });
+    }
+
+    function haceCuanto(t) {
+      const min = Math.round((Date.now() - t) / 60000);
+      if (min < 1) return 'ahora';
+      if (min < 60) return 'hace ' + min + ' min';
+      const h = Math.round(min / 60);
+      if (h < 24) return 'hace ' + h + ' h';
+      return 'hace ' + Math.round(h / 24) + ' d';
     }
 
     function cerrarModalIG() {
