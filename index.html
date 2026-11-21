@@ -138,6 +138,19 @@
       padding: 5px 10px; font-size: 13px; font-weight: 600; cursor: pointer;
     }
     .nueva-btn.active { background: #FF9500; color: #fff; }
+        .me-fila { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 12px; align-items: end; }
+    .me-fila .field-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .me-fila .client-input, .me-fila .duracion-select {
+      width: 100%; height: 50px; line-height: 50px; font-size: 15px;
+      padding: 0 10px; text-align: center; text-align-last: center;
+    }
+    .me-fila .duracion-select { padding-right: 24px; background-position: right 8px center; }
+    .me-fila input[type="time"] { display: block; }
+    .me-fila input::-webkit-date-and-time-value { text-align: center; }
+    .btn-ig-borde {
+      background: transparent !important; color: var(--text-muted) !important;
+      border: 1.5px solid var(--text-muted) !important; text-decoration: none;
+    }
 
     #igSeleccionadoLabel { display: none; font-size: 12px; color: var(--apple-blue); font-weight: 600; margin-bottom: 6px; padding-left: 4px; }
 
@@ -400,14 +413,14 @@
             <div id="meTitulo" style="font-size:20px; font-weight:700;"></div>
             <div id="meIG" style="font-size:13px; font-weight:600; margin-top:2px;"></div>
           </div>
-          <a id="meBtnIG" class="btn-square" style="text-decoration:none; display:none;" aria-label="Abrir DM">IG</a>
+                    <a id="meBtnIG" class="btn-square btn-ig-borde" style="display:none;" aria-label="Abrir DM">IG</a>
         </div>
-        <div id="meSub" style="color:var(--text-muted); font-size:14px; margin:4px 0 16px;"></div>
+                <div id="meSub" style="color:var(--text-muted); font-size:14px; margin:16px 0 20px;"></div>
         <div id="meAviso"></div>
         <div id="meEditor">
           <label class="field-label">Fecha</label>
           <input type="date" id="meFecha" class="client-input">
-          <div class="input-row" style="margin-top:12px;">
+                    <div class="me-fila">
             <div style="flex:1; min-width:0;">
               <label class="field-label">Hora</label>
               <input type="time" id="meHora" step="900" class="client-input">
@@ -1761,7 +1774,7 @@
       btnIG.href = igEv ? 'https://ig.me/m/' + encodeURIComponent(igEv) : '#';
 
       const selAd = document.getElementById('meAdelanto');
-      const opcAd = [['0', 'Sin adelanto'], ['10', 'S/ 10'], ['20', 'S/ 20'], ['total', '💯']];
+      const opcAd = [['0', '--'], ['10', 'S/ 10'], ['20', 'S/ 20'], ['total', '💯']];
       const actualAd = String(ev.adelanto || 0);
       if (!opcAd.some(o => o[0] === actualAd)) opcAd.push([actualAd, 'S/ ' + actualAd]);   // citas antiguas (ej. S/ 5)
       selAd.innerHTML = '';
