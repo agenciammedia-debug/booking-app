@@ -395,7 +395,13 @@
     <div class="modal-sheet">
             <div class="modal-header"><button type="button" id="meBtnNueva" class="nueva-btn" onclick="toggleNuevaEvento()">🆕 Nueva</button>Cita<button class="close-btn" onclick="cerrarModalEvento()">Cerrar</button></div>
       <div class="modal-body">
-        <div id="meTitulo" style="font-size:20px; font-weight:700;"></div>
+                <div style="display:flex; align-items:center; gap:10px;">
+          <div style="flex:1; min-width:0;">
+            <div id="meTitulo" style="font-size:20px; font-weight:700;"></div>
+            <div id="meIG" style="font-size:13px; font-weight:600; margin-top:2px;"></div>
+          </div>
+          <a id="meBtnIG" class="btn-square" style="text-decoration:none; display:none;" aria-label="Abrir DM">IG</a>
+        </div>
         <div id="meSub" style="color:var(--text-muted); font-size:14px; margin:4px 0 16px;"></div>
         <div id="meAviso"></div>
         <div id="meEditor">
@@ -405,6 +411,10 @@
             <div style="flex:1; min-width:0;">
               <label class="field-label">Hora</label>
               <input type="time" id="meHora" step="900" class="client-input">
+            </div>
+                        <div style="flex:1; min-width:0;">
+              <label class="field-label">Adelanto</label>
+              <select id="meAdelanto" class="duracion-select"></select>
             </div>
             <div style="flex:1; min-width:0;">
               <label class="field-label">Duración</label>
@@ -1742,6 +1752,25 @@
     function abrirModalEvento(ev) {
       calEventoActual = ev;
       document.getElementById('meTitulo').textContent = ev.cliente;
+            const igEv = (ev.ig || '').trim().replace(/^@/, '');
+      const meIG = document.getElementById('meIG');
+      meIG.textContent = igEv ? '@' + igEv : 'Sin Instagram';
+      meIG.style.color = igEv ? 'var(--apple-blue)' : 'var(--text-muted)';
+      const btnIG = document.getElementById('meBtnIG');
+      btnIG.style.display = igEv ? 'flex' : 'none';
+      btnIG.href = igEv ? 'https://ig.me/m/' + encodeURIComponent(igEv) : '#';
+
+      const selAd = document.getElementById('meAdelanto');
+      const opcAd = [['0', 'Sin adelanto'], ['10', 'S/ 10'], ['20', 'S/ 20'], ['total', '💯']];
+      const actualAd = String(ev.adelanto || 0);
+      if (!opcAd.some(o => o[0] === actualAd)) opcAd.push([actualAd, 'S/ ' + actualAd]);   // citas antiguas (ej. S/ 5)
+      selAd.innerHTML = '';
+      opcAd.forEach(([v, t]) => {
+        const o = document.createElement('option');
+        o.value = v; o.textContent = t;
+        if (v === actualAd) o.selected = true;
+        selAd.appendChild(o);
+      });
       document.getElementById('meSub').textContent = [
         ev.todoElDia ? 'Todo el día' : rangoHora(ev.inicio, ev.fin),
         ev.servicio,
@@ -1820,7 +1849,7 @@
       document.getElementById('modalEvento').classList.remove('active');
     }
 
-    function guardarEdicionEvento() {
+        function guardarEdicionEvento() {
       const ev = calEventoActual;
       if (!ev) return;
       const f = document.getElementById('meFecha').value;
@@ -1832,8 +1861,39 @@
       const ini = new Date(y, mo - 1, d, hh, mm).getTime();
       const fin = ini + parseInt(document.getElementById('meDuracion').value, 10) * 60000;
 
+      const vAd = document.getElementById('meAdelanto').value;
+      const nuevoAd = vAd === 'total' ? 'total' : (parseInt(vAd, 10) || 0);
+      const cambioAd = String(nuevoAd) !== String(ev.adelanto || 0);
+      const cambioHora = ini !== ev.inicio || fin !== ev.fin;
+
       cerrarModalEvento();
-      guardarMovimiento(ev, ini, fin);
+      if (cambioAd) guardarAdelanto(ev, nuevoAd);
+      if (cambioHora) guardarMovimiento(ev, ini, fin);
+    }
+
+    function guardarAdelanto(ev, nuevo) {
+      const antes = ev.adelanto || 0;
+      const sede = calSede;
+      const fecha = fechaKeyLocal(new Date(ev.inicio));
+      const aplicar = v => {
+        ev.adelanto = v;
+        const c = (diaCacheado(sede, fecha) || []).find(e => e.id === ev.id);
+        if (c) c.adelanto = v;
+        persistirDias();
+        pintarCalendario();
+      };
+      aplicar(nuevo);
+
+      llamarAPI('cambiarAdelanto', { sede: sede, eventId: ev.id, adelanto: nuevo })
+        .then(r => {
+          if (!r || !r.ok) throw new Error((r && r.error) || 'desconocido');
+          mostrarToast(nuevo ? 'Adelanto: ' + (nuevo === 'total' ? '💯' : 'S/ ' + nuevo) : 'Adelanto quitado');
+          refrescarTrasCambio(sede, [fecha]);
+        })
+        .catch(err => {
+          aplicar(antes);
+          alert('No se pudo cambiar el adelanto: ' + err.message);
+        });
     }
 
     function borrarEventoActual() {
