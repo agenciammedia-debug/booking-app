@@ -15,6 +15,13 @@
         serviceWorkerPath: "/booking-app/OneSignalSDKWorker.js",
         serviceWorkerParam: { scope: "/booking-app/" }
       });
+      // Al tocar el push: abrir la pantalla azul (abrir.html) o la de aprobar, aunque la app ya esté instalada
+      OneSignal.Notifications.addEventListener('click', function (e) {
+        try {
+          var u = (e && e.notification && (e.notification.launchURL || (e.result && e.result.url))) || '';
+          if (/\/booking-app\/(abrir|aprobar)\.html/.test(u)) location.href = u;
+        } catch (_) {}
+      });
     });
   </script>
     <meta name="apple-mobile-web-app-capable" content="yes">
