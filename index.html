@@ -506,7 +506,8 @@
       const query = Object.keys(params)
         .map(k => encodeURIComponent(k) + '=' + encodeURIComponent(params[k]))
         .join('&');
-      const url = APPS_SCRIPT_URL + '?action=' + encodeURIComponent(action) + (query ? '&' + query : '');
+      let tk = ''; try { tk = localStorage.getItem('apiToken') || ''; } catch (e) {}
+      const url = APPS_SCRIPT_URL + '?action=' + encodeURIComponent(action) + (query ? '&' + query : '') + (tk ? '&token=' + encodeURIComponent(tk) : '');
       const ctrl = window.AbortController ? new AbortController() : null;
       const timer = ctrl ? setTimeout(() => ctrl.abort(), 25000) : null;
       return fetch(url, {
@@ -519,6 +520,14 @@
         .then(res => {
           if (!res.ok) throw new Error('HTTP ' + res.status);
           return res.json();
+        })
+        .then(j => {
+          if (j && j.ok === false && j.error === 'No autorizado') {
+            const pin = window.prompt('Escribe la clave de acceso de la app (te la da Essence Studio)');
+            if (pin) { try { localStorage.setItem('apiToken', pin.trim()); } catch (e) {} location.reload(); }
+            throw new Error('Falta la clave de acceso');
+          }
+          return j;
         })
         .catch(err => {
           throw new Error(err.name === 'AbortError' ? 'El servidor tardó demasiado' : (err.message || 'Error de conexión'));
