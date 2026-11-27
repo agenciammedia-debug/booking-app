@@ -211,6 +211,22 @@
     .ig-item.muted { text-align: center; color: var(--text-muted); cursor: default; }
     #meAviso { display: none; background: var(--bg-color); border-radius: 12px; padding: 12px; font-size: 14px; color: var(--text-muted); }
 
+    /* Manicuristas por día */
+    .cap-nav { display: flex; align-items: center; justify-content: space-between; padding: 8px 16px; font-weight: 600; }
+    .cap-head, .cap-row { display: grid; grid-template-columns: 64px 1fr 1fr; gap: 8px; align-items: center; padding: 0 16px; }
+    .cap-head { font-size: 13px; color: var(--text-muted); text-align: center; padding-bottom: 6px; border-bottom: 0.5px solid var(--border-color); }
+    .cap-row { padding: 10px 0; border-bottom: 0.5px solid var(--border-color); }
+    .cap-row:last-child { border-bottom: none; }
+    .cap-dia b { display: block; font-size: 16px; }
+    .cap-dia small, .cap-cel small { color: var(--text-muted); font-size: 11px; }
+    .cap-cel { display: grid; grid-template-columns: 34px 1fr 34px; align-items: center; justify-items: center; background: var(--fill); border-radius: 12px; padding: 4px; }
+    .cap-cel small { grid-column: 1 / 4; min-height: 13px; }
+    .cap-cel button { width: 34px; height: 34px; border: none; border-radius: 10px; background: #fff; font-size: 20px; line-height: 1; color: var(--apple-blue); cursor: pointer; }
+    .cap-val { font-weight: 700; font-size: 17px; }
+    .cap-cel.cambiado { background: #FFF3CC; }
+    .cap-cel.cerrado .cap-val { color: #FF3B30; font-size: 14px; }
+    .cap-nota { padding: 10px 16px 0; font-size: 12px; color: var(--text-muted); text-align: center; }
+
     /* Tab bar */
     .tab-bar {
       position: relative; flex-shrink: 0; z-index: 100;
@@ -315,8 +331,9 @@
             <button class="seg-btn" data-sede="surco" onclick="cambiarSede('surco')">Surco</button>
           </div>
                     <button class="icon-btn" id="btnInstalar" onclick="instalarApp()" aria-label="Instalar app" style="display:none;">⬇️</button>
-                    <button class="icon-btn" onclick="activarNotificaciones()" aria-label="Notificaciones">🔔</button>
-          <button class="icon-btn" onclick="diagnosticoPWA()" aria-label="Diagnóstico">🔍</button>
+          <button class="icon-btn" id="btnNotif" onclick="activarNotificaciones()" aria-label="Activar notificaciones" style="display:none;">🔔</button>
+          <button class="icon-btn" onclick="abrirModalCap()" aria-label="Manicuristas por día">⚙️</button>
+          <button class="icon-btn" onclick="abrirBuscar()" aria-label="Buscar cita">🔍</button>
         </div>
         <div class="cal-nav">
           <button class="cal-nav-btn" onclick="cambiarDiaAnimado(-1)" aria-label="Día anterior">‹</button>
@@ -467,6 +484,24 @@
     <div class="modal-sheet">
       <div class="modal-header">Seleccionar servicio<button class="close-btn" onclick="cerrarModalServicio()">Cerrar</button></div>
       <div class="ig-list" id="servicioListContainer"></div>
+    </div>
+  </div>
+
+  <div id="modalCap" class="modal-overlay" onclick="if(event.target===this)cerrarModalCap()">
+    <div class="modal-sheet">
+      <div class="modal-header">Manicuristas por día<button class="close-btn" onclick="cerrarModalCap()">Listo</button></div>
+      <div class="cap-nav"><button class="cal-nav-btn" onclick="capMover(-7)" aria-label="Semana anterior">‹</button><span id="capRango"></span><button class="cal-nav-btn" onclick="capMover(7)" aria-label="Semana siguiente">›</button></div>
+      <div class="cap-head"><span></span><span>Miraflores</span><span>Surco</span></div>
+      <div class="ig-list" id="capLista"></div>
+      <div class="cap-nota">Toca − o + si ese día hay más o menos manicuristas. Mora lo usa al instante para dar turnos. En 0 el día queda cerrado.</div>
+    </div>
+  </div>
+
+  <div id="modalBuscar" class="modal-overlay" onclick="if(event.target===this)cerrarBuscar()">
+    <div class="modal-sheet">
+      <div class="modal-header">Buscar cita<button class="close-btn" onclick="cerrarBuscar()">Cerrar</button></div>
+      <div style="padding:12px 16px 4px;"><input id="buscarInput" type="search" placeholder="Nombre, @instagram o servicio" oninput="buscarCitasDebounce()" autocomplete="off" style="width:100%; padding:12px; font-size:17px; border:none; background:var(--fill); border-radius:10px; outline:none;"></div>
+      <div class="ig-list" id="buscarLista"></div>
     </div>
   </div>
 
@@ -1371,7 +1406,148 @@
       OneSignalDeferred.push(async function(OneSignal) {
         const permiso = await OneSignal.Notifications.requestPermission();
         mostrarToast(permiso ? 'Notificaciones activadas ✓' : 'Permiso no concedido');
+        actualizarBotonNotif();
       });
+    }
+    // La campana solo aparece mientras las notificaciones no estén activadas
+    function actualizarBotonNotif() {
+      const b = document.getElementById('btnNotif');
+      if (!b) return;
+      let mostrar = false;
+      try { mostrar = ('Notification' in window) && Notification.permission !== 'granted'; } catch (e) {}
+      b.style.display = mostrar ? 'flex' : 'none';
+    }
+    window.addEventListener('load', () => { actualizarBotonNotif(); setTimeout(actualizarBotonNotif, 2500); });
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) actualizarBotonNotif(); });
+
+    // ===================== MANICURISTAS POR DÍA (⚙️) =====================
+    let capDesde = null, capDias = [];
+    const capTimers = {}, capSeq = {};
+    function abrirModalCap() {
+      capDesde = new Date(); capDesde.setHours(0, 0, 0, 0);
+      document.getElementById('modalCap').classList.add('active');
+      cargarCap();
+    }
+    function cerrarModalCap() { document.getElementById('modalCap').classList.remove('active'); }
+    function capMover(n) {
+      const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+      const nuevo = new Date(capDesde); nuevo.setDate(nuevo.getDate() + n);
+      capDesde = nuevo < hoy ? hoy : nuevo;
+      cargarCap();
+    }
+    function cargarCap() {
+      const lista = document.getElementById('capLista');
+      const d0 = new Date(capDesde), d1 = new Date(capDesde); d1.setDate(d1.getDate() + 6);
+      document.getElementById('capRango').textContent = d0.getDate() + ' ' + nombresMeses[d0.getMonth()] + ' – ' + d1.getDate() + ' ' + nombresMeses[d1.getMonth()];
+      msgLista(lista, 'Cargando...', 'ig-item muted');
+      const desde = fechaKeyLocal(capDesde);
+      llamarAPI('capSemana', { desde: desde, dias: 7 }).then(r => {
+        if (!r || !r.ok) throw new Error((r && r.error) || 'Error');
+        if (fechaKeyLocal(capDesde) !== desde) return;
+        capDias = r.dias || [];
+        pintarCap();
+      }).catch(e => msgLista(lista, 'Error: ' + e.message, 'ig-item muted'));
+    }
+    function pintarCap() {
+      const lista = document.getElementById('capLista');
+      lista.innerHTML = '';
+      capDias.forEach(d => {
+        const f = parseFechaLocal(d.fecha);
+        const row = document.createElement('div');
+        row.className = 'cap-row';
+        row.dataset.fecha = d.fecha;
+        const et = document.createElement('div');
+        et.className = 'cap-dia';
+        et.innerHTML = '<b></b><small></small>';
+        et.children[0].textContent = diasSemana[f.getDay()] + ' ' + f.getDate();
+        et.children[1].textContent = nombresMeses[f.getMonth()];
+        row.appendChild(et);
+        ['miraflores', 'surco'].forEach(sede => row.appendChild(crearCelCap(d, sede)));
+        lista.appendChild(row);
+      });
+    }
+    function crearCelCap(d, sede) {
+      const c = d[sede];
+      const cel = document.createElement('div');
+      cel.className = 'cap-cel' + (c.valor !== c.normal ? ' cambiado' : '') + (c.valor === 0 ? ' cerrado' : '');
+      cel.dataset.sede = sede;
+      const menos = document.createElement('button'); menos.textContent = '−'; menos.onclick = () => capCambiar(d.fecha, sede, -1);
+      const val = document.createElement('span'); val.className = 'cap-val'; val.textContent = c.valor === 0 ? 'Cerrado' : c.valor;
+      const mas = document.createElement('button'); mas.textContent = '+'; mas.onclick = () => capCambiar(d.fecha, sede, 1);
+      const sub = document.createElement('small'); sub.textContent = c.valor !== c.normal ? 'normal: ' + c.normal : '';
+      cel.append(menos, val, mas, sub);
+      return cel;
+    }
+    function capCambiar(fecha, sede, delta) {
+      const d = capDias.find(x => x.fecha === fecha);
+      if (!d) return;
+      const c = d[sede];
+      const nuevo = Math.max(0, Math.min(12, c.valor + delta));
+      if (nuevo === c.valor) return;
+      c.valor = nuevo;
+      const row = document.querySelector('#capLista .cap-row[data-fecha="' + fecha + '"]');
+      if (row) { const viejo = row.querySelector('.cap-cel[data-sede="' + sede + '"]'); if (viejo) row.replaceChild(crearCelCap(d, sede), viejo); }
+      const k = fecha + sede;
+      clearTimeout(capTimers[k]);
+      const seq = (capSeq[k] = (capSeq[k] || 0) + 1);
+      capTimers[k] = setTimeout(() => {
+        llamarAPI('capSet', { fecha: fecha, sede: sede, valor: nuevo === c.normal ? '' : nuevo }).then(r => {
+          if (!r || !r.ok) throw new Error((r && r.error) || 'No se pudo guardar');
+          if (seq === capSeq[k]) mostrarToast('Guardado ✓ ' + nombreSede(sede));
+        }).catch(e => { mostrarToast('No se guardó: ' + e.message); cargarCap(); });
+      }, 600);
+    }
+
+    // ===================== BUSCAR CITA (🔍) =====================
+    let buscarTimer = null, buscarSeq = 0;
+    function abrirBuscar() {
+      document.getElementById('modalBuscar').classList.add('active');
+      const i = document.getElementById('buscarInput');
+      i.value = '';
+      msgLista(document.getElementById('buscarLista'), 'Escribe el nombre, @instagram o servicio', 'ig-item muted');
+      setTimeout(() => i.focus(), 300);
+    }
+    function cerrarBuscar() { document.getElementById('modalBuscar').classList.remove('active'); }
+    function buscarCitasDebounce() { clearTimeout(buscarTimer); buscarTimer = setTimeout(buscarCitas, 350); }
+    function buscarCitas() {
+      const q = document.getElementById('buscarInput').value.trim();
+      const lista = document.getElementById('buscarLista');
+      if (q.length < 2) return msgLista(lista, 'Escribe el nombre, @instagram o servicio', 'ig-item muted');
+      const seq = ++buscarSeq;
+      msgLista(lista, 'Buscando...', 'ig-item muted');
+      llamarAPI('buscar', { q: q }).then(r => {
+        if (seq !== buscarSeq) return;
+        if (!r || !r.ok) throw new Error((r && r.error) || 'Error');
+        const res = r.res || [];
+        if (!res.length) return msgLista(lista, 'No encontré citas con "' + q + '"', 'ig-item muted');
+        lista.innerHTML = '';
+        const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+        res.forEach(ev => {
+          const ini = new Date(ev.inicio);
+          const div = document.createElement('div');
+          div.className = 'ig-item';
+          if (ini < hoy) div.style.opacity = '0.55';
+          const l1 = document.createElement('div'); l1.textContent = ev.cliente;
+          const l2 = document.createElement('div');
+          l2.style.cssText = 'font-size:13px; color:var(--text-muted); margin-top:2px;';
+          l2.textContent = fechaCorta(ini) + ' · ' + formatHora12(ini) + ' · ' + nombreSede(ev.sede) + (ev.manicurista ? ' · ' + ev.manicurista : '');
+          div.append(l1, l2);
+          div.onclick = () => irACita(ev);
+          lista.appendChild(div);
+        });
+      }).catch(e => { if (seq === buscarSeq) msgLista(lista, 'Error: ' + e.message, 'ig-item muted'); });
+    }
+    function irACita(ev) {
+      cerrarBuscar();
+      calSede = ev.sede;
+      try { localStorage.setItem('calSede', ev.sede); } catch (e) {}
+      calFecha = new Date(ev.inicio); calFecha.setHours(0, 0, 0, 0);
+      if (vistaActiva('calendario')) initCalendario(); else switchTab('calendario');
+      let intentos = 0;
+      const t = setInterval(() => {
+        const f = calEventos.find(x => x.id === ev.id);
+        if (f || ++intentos > 20) { clearInterval(t); if (f) abrirModalEvento(f); }
+      }, 250);
     }
 
     // ===================== CALENDARIO =====================
