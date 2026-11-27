@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Aprobar abono</title>
+<style>
+  :root { --bg:#F2F2F7; --card:#fff; --txt:#1c1c1e; --mut:#6e6e73; --ok:#34c759; --no:#ff3b30; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#000; --card:#1c1c1e; --txt:#f2f2f7; --mut:#98989d; } }
+  * { box-sizing: border-box; }
+  body { margin:0; min-height:100vh; background:var(--bg); color:var(--txt); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+         display:flex; align-items:center; justify-content:center; padding:20px; }
+  .card { width:100%; max-width:420px; background:var(--card); border-radius:20px; padding:24px; box-shadow:0 4px 24px rgba(0,0,0,.08); }
+  h1 { font-size:20px; margin:0 0 6px; }
+  .sub { color:var(--mut); font-size:14px; margin-bottom:18px; }
+  .resumen { font-size:18px; font-weight:600; line-height:1.4; margin:12px 0 22px; }
+  button { width:100%; border:0; border-radius:14px; padding:16px; font-size:17px; font-weight:600; color:#fff; margin-top:10px; }
+  .ok { background:var(--ok); } .no { background:var(--no); }
+  button:disabled { opacity:.5; }
+  .msg { margin-top:16px; font-size:15px; text-align:center; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Abono de 10 soles</h1>
+  <div class="sub">Revisa que el Plin al 906173257 haya llegado</div>
+  <div class="resumen" id="resumen">Cargando…</div>
+  <button class="ok" id="bOk" disabled>✅ Aprobar y agendar</button>
+  <button class="no" id="bNo" disabled>✖ Rechazar (pedir otra captura)</button>
+  <div class="msg" id="msg"></div>
+</div>
+<script>
+  var API = 'https://script.google.com/macros/s/AKfycbz_vC73zfR0OxRum2qaDWGLDSaFA0YirDO4TvcuA3UsNv69DRS8ZW8A3mS4SSfeFJ7KfQ/exec';
+  var id = new URLSearchParams(location.search).get('id') || '';
+  function tk() { try { return localStorage.getItem('apiToken') || ''; } catch (e) { return ''; } }
+  function llamar(action, extra) {
+    var q = 'action=' + action + '&id=' + encodeURIComponent(id) + '&token=' + encodeURIComponent(tk());
+    return fetch(API + '?' + q, { cache: 'no-store', redirect: 'follow' }).then(function (r) { return r.json(); });
+  }
+  function msg(t) { document.getElementById('msg').textContent = t; }
+  function pedirClave() {
+    var p = window.prompt('Escribe la clave de acceso de la app');
+    if (p) { try { localStorage.setItem('apiToken', p.trim()); } catch (e) {} location.reload(); }
+  }
+  function cargar() {
+    if (!id) { document.getElementById('resumen').textContent = 'Falta el id de la reserva'; return; }
+    llamar('reservaInfo').then(function (j) {
+      if (j && j.error === 'No autorizado') return pedirClave();
+      if (!j.ok) { document.getElementById('resumen').textContent = j.error || 'No se pudo cargar'; return; }
+      document.getElementById('resumen').textContent = j.resumen;
+      if (j.estado === 'CONFIRMADA') { msg('✅ Ya estaba aprobada'); return; }
+      if (j.estado === 'EXPIRADA') msg('⚠️ El horario ya se había liberado. Si apruebas, se intentará agendar de nuevo.');
+      document.getElementById('bOk').disabled = false;
+      document.getElementById('bNo').disabled = j.estado === 'EXPIRADA';
+    }).catch(function () { msg('Error de conexión, intenta de nuevo'); });
+  }
+  function accion(a) {
+    document.getElementById('bOk').disabled = true; document.getElementById('bNo').disabled = true; msg('Procesando…');
+    llamar(a).then(function (j) {
+      if (j.ok) msg(a === 'aprobar' ? '✅ Aprobado. La cita quedó agendada y se avisó a la clienta.' : '↩️ Rechazado. Se le pidió otra captura a la clienta.');
+      else { msg('⚠️ ' + (j.error || 'No se pudo completar')); document.getElementById('bOk').disabled = false; }
+    }).catch(function () { msg('Error de conexión, intenta de nuevo'); document.getElementById('bOk').disabled = false; });
+  }
+  document.getElementById('bOk').onclick = function () { accion('aprobar'); };
+  document.getElementById('bNo').onclick = function () { accion('rechazar'); };
+  cargar();
+</script>
+</body>
+</html>
