@@ -19,6 +19,12 @@
   .chat { display:none; width:100%; text-align:center; text-decoration:none; border-radius:14px; padding:16px; font-size:17px; font-weight:600; color:#fff; background:#007aff; margin-top:10px; }
   .cerrar { background:transparent; color:#007aff; border:1.5px solid #007aff; }
   button:disabled { opacity:.5; }
+  .foto { display:none; width:100%; border-radius:14px; margin:0 0 14px; max-height:46vh; object-fit:contain; background:#000; }
+  .nofoto { display:none; font-size:13px; color:var(--mut); margin:0 0 12px; }
+  .chatbox { display:none; margin:0 0 6px; max-height:34vh; overflow:auto; padding:10px; border-radius:14px; background:var(--bg); }
+  .b { max-width:82%; padding:8px 11px; border-radius:16px; font-size:14px; line-height:1.3; margin:4px 0; white-space:pre-wrap; word-break:break-word; }
+  .b.c { background:#e5e5ea; color:#000; margin-right:auto; border-bottom-left-radius:4px; }
+  .b.m { background:#007aff; color:#fff; margin-left:auto; border-bottom-right-radius:4px; }
   .msg { margin-top:16px; font-size:15px; text-align:center; }
 </style>
 </head>
@@ -27,6 +33,9 @@
   <h1>Abono de 10 soles</h1>
   <div class="sub">Revisa que el Plin al 906173357 haya llegado</div>
   <div class="resumen" id="resumen">Cargando…</div>
+  <a id="fotoLink" target="_blank" rel="noopener"><img class="foto" id="foto" alt="Captura de pago" referrerpolicy="no-referrer"></a>
+  <div class="nofoto" id="nofoto">No se guardó la foto de la captura: mírala en el chat.</div>
+  <div class="chatbox" id="chatbox"></div>
   <button class="ok" id="bOk" disabled>✅ Aprobar y agendar</button>
   <button class="no" id="bNo" disabled>✖ Rechazar (pedir otra captura)</button>
   <a class="chat" id="bChat" href="#">💬 Ir al chat de la clienta</a>
@@ -46,6 +55,27 @@
     var p = window.prompt('Escribe la clave de acceso de la app');
     if (p) { try { localStorage.setItem('apiToken', p.trim()); } catch (e) {} location.reload(); }
   }
+  function verCaptura(k) {
+    if (!k) return;
+    fetch(API + '?action=capVer&sid=' + encodeURIComponent(k) + '&token=' + encodeURIComponent(tk()), { cache: 'no-store', redirect: 'follow' })
+      .then(function (r) { return r.json(); }).then(function (j) {
+        if (!j || !j.ok) return;
+        if (j.img) {
+          var f = document.getElementById('foto'); f.src = j.img; f.style.display = 'block';
+          f.onerror = function () { f.style.display = 'none'; document.getElementById('nofoto').style.display = 'block'; };
+          document.getElementById('fotoLink').href = j.img;
+        } else document.getElementById('nofoto').style.display = 'block';
+        if (j.chat) {
+          var box = document.getElementById('chatbox'); box.style.display = 'block';
+          String(j.chat).split('\n').forEach(function (l) {
+            var i = l.indexOf('|'); if (i < 0) return;
+            var d = document.createElement('div'); d.className = 'b ' + (l.slice(0, i) === 'C' ? 'c' : 'm');
+            d.textContent = l.slice(i + 1); box.appendChild(d);
+          });
+          box.scrollTop = box.scrollHeight;
+        }
+      }).catch(function () {});
+  }
   function cargar() {
     if (!id) {
       var q = new URLSearchParams(location.search), u = (q.get('u') || '').replace(/^@/, '').trim(), n = (q.get('n') || '').trim();
@@ -53,6 +83,7 @@
         document.getElementById('resumen').textContent = '⚠️ Captura sin reserva activa · ' + (n ? n + ' ' : '') + '(@' + u + ')';
         var c = document.getElementById('bChat'); c.href = 'https://ig.me/m/' + encodeURIComponent(u); c.style.display = 'block';
         msg('No hay un horario apartado para esta clienta. Revisa el chat.');
+        verCaptura(q.get('k') || '');
       } else document.getElementById('resumen').textContent = 'Falta el id de la reserva';
       return;
     }
@@ -60,6 +91,7 @@
       if (j && j.error === 'No autorizado') return pedirClave();
       if (!j.ok) { document.getElementById('resumen').textContent = j.error || 'No se pudo cargar'; return; }
       document.getElementById('resumen').textContent = j.resumen;
+      verCaptura(new URLSearchParams(location.search).get('k') || j.sid || '');
       var ig = String(j.ig || '').replace(/^@/, '').trim();
       if (ig) { var c = document.getElementById('bChat'); c.href = 'https://ig.me/m/' + encodeURIComponent(ig); c.style.display = 'block'; }
       if (j.estado === 'CONFIRMADA') { msg('✅ Ya estaba aprobada'); return; }
