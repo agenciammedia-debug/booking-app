@@ -47,7 +47,15 @@
     if (p) { try { localStorage.setItem('apiToken', p.trim()); } catch (e) {} location.reload(); }
   }
   function cargar() {
-    if (!id) { document.getElementById('resumen').textContent = 'Falta el id de la reserva'; return; }
+    if (!id) {
+      var q = new URLSearchParams(location.search), u = (q.get('u') || '').replace(/^@/, '').trim(), n = (q.get('n') || '').trim();
+      if (u) {
+        document.getElementById('resumen').textContent = '⚠️ Captura sin reserva activa · ' + (n ? n + ' ' : '') + '(@' + u + ')';
+        var c = document.getElementById('bChat'); c.href = 'https://ig.me/m/' + encodeURIComponent(u); c.style.display = 'block';
+        msg('No hay un horario apartado para esta clienta. Revisa el chat.');
+      } else document.getElementById('resumen').textContent = 'Falta el id de la reserva';
+      return;
+    }
     llamar('reservaInfo').then(function (j) {
       if (j && j.error === 'No autorizado') return pedirClave();
       if (!j.ok) { document.getElementById('resumen').textContent = j.error || 'No se pudo cargar'; return; }
